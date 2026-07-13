@@ -4,7 +4,7 @@ import { requireAuth, sendError } from './_lib/auth.js';
 import { getSupabase } from './_lib/db.js';
 import { isAuthorizedIngestCron } from './_lib/ingest-auth.js';
 import { combineIngestMessages, determineIngestOutcome, type IngestOutcome } from './_lib/ingest-health.js';
-import { errorMessage, logServerError } from './_lib/logger.js';
+import { describeServerError, errorMessage, logServerError } from './_lib/logger.js';
 import { normalizeRawJob, type NormalizedJob } from './_lib/normalize.js';
 import { getSourceAdapter } from './_lib/sources/index.js';
 import type { RawJob } from './_lib/sources/types.js';
@@ -226,17 +226,24 @@ async function completeRun(
 ): Promise<IngestRun> {
   const finishedAt = new Date();
   const durationMs = Math.max(0, Date.now() - startedAt);
-  const { data, error } = await getSupabase()
+  const supabase = getSupabase();
+  const baseUpdate = {
+    finished_at: finishedAt.toISOString(),
+    found: stats.found,
+    matched: stats.matched,
+    inserted: stats.inserted,
+    error: errorMessage,
+  };
+  let finalized: IngestRun;
+  let usedLegacyColumns = false;
+
+  const { data, error } = await supabase
     .from('ingest_runs')
     .update({
-      finished_at: finishedAt.toISOString(),
-      found: stats.found,
-      matched: stats.matched,
-      inserted: stats.inserted,
+      ...baseUpdate,
       inserted_active: stats.insertedActive,
       inserted_dismissed: stats.insertedDismissed,
       updated: stats.updated,
-      error: errorMessage,
       outcome,
       duration_ms: durationMs,
     })
@@ -244,9 +251,22 @@ async function completeRun(
     .select('*')
     .single();
 
-  if (error) throw error;
-  const finalized = data as IngestRun;
-  if (run.source !== 'lifecycle') {
+  if (error && !isMissingRunColumnError(error)) throw error;
+  if (error) {
+    usedLegacyColumns = true;
+    const { data: legacyData, error: legacyError } = await supabase
+      .from('ingest_runs')
+      .update(baseUpdate)
+      .eq('id', run.id)
+      .select('*')
+      .single();
+    if (legacyError) throw legacyError;
+    finalized = legacyData as IngestRun;
+  } else {
+    finalized = data as IngestRun;
+  }
+
+  if (run.source !== 'lifecycle' && !usedLegacyColumns) {
     await updateSourceHealth({
       source: run.source,
       outcome,
@@ -257,6 +277,11 @@ async function completeRun(
     });
   }
   return finalized;
+}
+
+function isMissingRunColumnError(error: unknown): boolean {
+  const details = describeServerError(error);
+  return details.code === '42703' || details.code === 'PGRST204';
 }
 
 async function updateSourceHealth(input: {
