@@ -25,7 +25,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -45,13 +46,20 @@ button:disabled {
 }
 
 input,
-select {
+select,
+textarea {
   min-height: 40px;
   border: 1px solid #374151;
   border-radius: 6px;
   padding: 0 12px;
   color: #f9fafb;
   background: #111827;
+}
+
+textarea {
+  min-height: 120px;
+  padding: 10px 12px;
+  resize: vertical;
 }
 
 .app-shell {
@@ -149,10 +157,72 @@ h1 {
   font-size: 14px;
 }
 
+.form-hint {
+  margin: 8px 0 0;
+  color: #fde68a;
+  font-size: 14px;
+}
+
 form.panel {
   display: grid;
   max-width: 420px;
   gap: 12px;
+}
+
+.profile-form {
+  display: grid;
+  max-width: 980px;
+  gap: 16px;
+}
+
+.form-section {
+  display: grid;
+  gap: 16px;
+}
+
+.form-section label {
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inline-add,
+.repeat-row,
+.section-heading,
+.sticky-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inline-add input,
+.repeat-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-heading,
+.sticky-actions {
+  justify-content: space-between;
+}
+
+.work-entry {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #243044;
+  padding-top: 16px;
+}
+
+.chip.removable {
+  border: 0;
+  cursor: pointer;
 }
 
 .filter-bar {
@@ -372,13 +442,18 @@ h2 {
   .board-header,
   .detail-grid,
   .filter-bar,
+  .form-grid,
   .metadata-list {
     grid-template-columns: 1fr;
   }
 
   .header-actions,
+  .inline-add,
   .job-card-main,
-  .job-card-footer {
+  .job-card-footer,
+  .repeat-row,
+  .section-heading,
+  .sticky-actions {
     align-items: stretch;
     flex-direction: column;
   }
