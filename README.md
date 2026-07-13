@@ -45,6 +45,8 @@ No variable should be prefixed with `VITE_`.
 
 1. Create a Supabase project.
 2. Run each SQL file in `supabase/migrations/` in filename order in the SQL editor.
+   The current app requires migrations `002`, `003`, and `004`; do not deploy
+   API changes before applying them.
 3. Create a private Storage bucket named `documents`.
 4. Put `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel project environment variables.
 

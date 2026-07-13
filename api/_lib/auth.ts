@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import type { VercelRequest } from '@vercel/node';
 import { jwtVerify, SignJWT } from 'jose';
 
-import { logServerError } from './logger.js';
+import { describeServerError, logServerError } from './logger.js';
 
 const COOKIE_NAME = 'vjh_session';
 const SESSION_DAYS = 30;
@@ -136,6 +136,16 @@ export function sendError(
     return;
   }
 
+  if (isSchemaMigrationError(error)) {
+    res.status(503).json({ error: 'Database migration required. Apply the pending Supabase migrations, then try again.' });
+    return;
+  }
+
   logServerError(error, context);
   res.status(500).json({ error: 'Internal server error' });
+}
+
+export function isSchemaMigrationError(error: unknown): boolean {
+  const details = describeServerError(error);
+  return details.code === 'PGRST204' || details.code === '42703';
 }
