@@ -1,4 +1,4 @@
-# Vue Job Hunter
+# KOBOLD
 
 Personal Vue.js job-hunting tool for Berlin and remote-Europe full-time roles.
 

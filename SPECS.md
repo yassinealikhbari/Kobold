@@ -1,4 +1,4 @@
-# Vue Job Hunter — Technical Specification & Build Plan
+# KOBOLD — Technical Specification & Build Plan
 
 Personal job-hunting tool for Yassine Alikhbari. Aggregates full-time Vue.js roles (Berlin or remote-within-Europe), filters out German-required and junior listings, notifies via Telegram, and provides a prefill-and-confirm apply flow with LLM-generated cover letters and a kanban application tracker.
 

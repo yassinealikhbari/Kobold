@@ -13,8 +13,8 @@ const navItems = [
   <div class="app-shell">
     <aside class="sidebar">
       <RouterLink class="brand" to="/">
-        <span class="brand-kicker">VJH / 2026</span>
-        <span class="brand-wordmark">Vue Job Hunter</span>
+        <span class="brand-kicker">KOBOLD / 2026</span>
+        <span class="brand-wordmark">KOBOLD</span>
       </RouterLink>
       <nav class="nav-list" aria-label="Main navigation">
         <RouterLink v-for="(item, index) in navItems" :key="item.to" :to="item.to">

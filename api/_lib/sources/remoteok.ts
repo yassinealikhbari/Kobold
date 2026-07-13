@@ -20,7 +20,7 @@ export const remoteOkAdapter: SourceAdapter = {
   async fetchJobs() {
     const response = await fetchJson<RemoteOkJob[]>('https://remoteok.com/api', {
       headers: {
-        'User-Agent': 'Vue Job Hunter/1.0 (personal job search tool)',
+        'User-Agent': 'KOBOLD/1.0 (personal job search tool)',
       },
     });
 

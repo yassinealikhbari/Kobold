@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make Vue Job Hunter a dependable daily application workspace for finding,
+Make KOBOLD a dependable daily application workspace for finding,
 evaluating, applying to, and following up on Vue.js roles. The tool should
 reduce time spent triaging listings, never misrepresent source health, and
 surface the next useful action for every application.
