@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 
 import { absoluteDate, relativeDate } from '@/lib/dates';
 import type { Job } from '@/types/jobs';
 import TagChip from './TagChip.vue';
 
-defineProps<{
+const props = defineProps<{
   job: Job;
 }>();
+
+const router = useRouter();
 
 const emit = defineEmits<{
   save: [id: string];
@@ -22,16 +24,20 @@ function locationBadge(job: Job): string {
   if (job.workplace === 'remote') return 'region unverified';
   return job.location || 'location unknown';
 }
+
+function openJob() {
+  void router.push(`/jobs/${props.job.id}`);
+}
 </script>
 
 <template>
-  <article class="job-card">
+  <article class="job-card" role="link" tabindex="0" :aria-label="`Open ${job.title}`" @click="openJob" @keydown.enter="openJob" @keydown.space.prevent="openJob">
     <div class="job-card-main">
       <div>
-        <RouterLink class="job-title" :to="`/jobs/${job.id}`">{{ job.title }}</RouterLink>
+        <h2 class="job-title">{{ job.title }}</h2>
         <p class="job-company">{{ job.company }}</p>
       </div>
-      <span class="score-pill">Score {{ job.score }}</span>
+      <span class="score-label">Match score <strong>{{ job.score }}</strong></span>
     </div>
 
     <div class="chip-row">
@@ -49,13 +55,13 @@ function locationBadge(job: Job): string {
       <span :title="absoluteDate(job.posted_at ?? job.first_seen_at)">
         {{ relativeDate(job.posted_at ?? job.first_seen_at) }}
       </span>
-      <div class="action-row">
-        <RouterLink v-if="job.application" class="text-button" to="/tracker">
+      <div class="action-row" @click.stop @keydown.stop>
+        <RouterLink v-if="job.application" class="job-action job-action--secondary" to="/tracker">
           {{ job.application.status === 'applied' ? 'Applied' : 'Saved' }}
         </RouterLink>
-        <button v-else class="text-button" type="button" @click="emit('save', job.id)">Save</button>
-        <button class="text-button" type="button" @click="emit('dismiss', job.id)">Dismiss</button>
-        <a class="text-button apply-link" :href="job.apply_url ?? job.url" target="_blank" rel="noreferrer">Apply</a>
+        <button v-else class="job-action job-action--secondary" type="button" @click="emit('save', job.id)">Save</button>
+        <button class="job-action job-action--secondary" type="button" @click="emit('dismiss', job.id)">Dismiss</button>
+        <a class="job-action job-action--primary" :href="job.apply_url ?? job.url" target="_blank" rel="noreferrer">Apply</a>
       </div>
     </div>
   </article>

@@ -74,7 +74,6 @@ select,
 textarea,
 .panel,
 .tag-chip,
-.score-pill,
 .button-link,
 .kanban-card,
 .kanban-column {
@@ -463,7 +462,7 @@ form.panel {
 }
 
 .tag-chip,
-.score-pill {
+.score-label {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
@@ -507,13 +506,6 @@ form.panel {
   text-transform: none;
 }
 
-.score-pill {
-  border-width: var(--border-base);
-  padding: 6px 10px;
-  background: var(--accent);
-  font-size: 12px;
-}
-
 .job-list {
   display: grid;
   width: min(100%, 980px);
@@ -533,6 +525,18 @@ form.panel {
   border: var(--border-base) solid var(--ink);
   padding: 18px;
   background: var(--surface);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: background 70ms ease-out;
+}
+
+.job-card:hover {
+  background: var(--accent-subtle);
+}
+
+.job-card:focus-visible {
+  outline: var(--border-strong) solid var(--accent);
+  outline-offset: 4px;
 }
 
 .job-card-main,
@@ -544,20 +548,12 @@ form.panel {
 }
 
 .job-title {
-  display: inline-flex;
-  border: var(--border-base) solid var(--ink);
-  padding: 3px 5px;
   color: var(--ink);
-  box-shadow: var(--shadow);
   font-family: 'Bebas Neue', Impact, sans-serif;
   font-size: clamp(27px, 3vw, 34px);
   letter-spacing: 0.7px;
   line-height: 0.92;
   text-transform: uppercase;
-}
-
-.job-title:hover {
-  background: var(--accent);
 }
 
 .job-company {
@@ -575,6 +571,32 @@ form.panel {
   font-size: 12px;
 }
 
+.score-label {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  line-height: 1;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.score-label strong {
+  color: var(--ink);
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  line-height: 0.78;
+}
+
 .job-card-footer {
   align-items: center;
   padding-top: 4px;
@@ -585,8 +607,40 @@ form.panel {
   text-transform: uppercase;
 }
 
-.apply-link {
+.job-action {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-thin) solid var(--ink);
+  padding: 7px 9px;
   color: var(--ink);
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 19px;
+  letter-spacing: 0.8px;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: transform 70ms ease-out, box-shadow 70ms ease-out, background 70ms ease-out;
+}
+
+.job-action:hover {
+  background: var(--accent-subtle);
+}
+
+.job-action:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+.job-action--primary {
+  min-height: 42px;
+  border-width: var(--border-strong);
+  padding: 8px 12px;
+  background: var(--accent);
+  box-shadow: var(--shadow);
+  font-size: 23px;
 }
 
 .button-link {
