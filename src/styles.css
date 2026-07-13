@@ -409,6 +409,52 @@ h2 {
   font-size: 20px;
 }
 
+h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.apply-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.copy-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.copy-field,
+.ats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.copy-field span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.copy-field small {
+  overflow: hidden;
+  color: #94a3b8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cover-letter-block,
+.cv-block {
+  display: grid;
+  gap: 10px;
+}
+
+.primary-action {
+  width: 100%;
+}
+
 .job-description {
   color: #e5e7eb;
 }
@@ -453,7 +499,9 @@ h2 {
   .job-card-footer,
   .repeat-row,
   .section-heading,
-  .sticky-actions {
+  .sticky-actions,
+  .ats-row,
+  .copy-field {
     align-items: stretch;
     flex-direction: column;
   }

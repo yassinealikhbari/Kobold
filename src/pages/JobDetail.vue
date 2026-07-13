@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify';
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
+import ApplyPanel from '@/components/ApplyPanel.vue';
 import { absoluteDate } from '@/lib/dates';
 import { useJobsStore } from '@/stores/jobs';
 
@@ -17,6 +18,12 @@ const sanitizedDescription = computed(() => {
 async function dismiss() {
   if (!jobs.selectedJob) return;
   await jobs.updateJobStatus(jobs.selectedJob.id, 'dismissed');
+}
+
+function refreshJob() {
+  if (typeof route.params.id === 'string') {
+    void jobs.fetchJob(route.params.id);
+  }
 }
 
 onMounted(async () => {
@@ -71,10 +78,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section class="panel apply-panel">
-        <h2>Apply Prep</h2>
-        <p class="subtle">Profile fields, CV, and generated cover letters are added in the next phases.</p>
-      </section>
+      <ApplyPanel :job="jobs.selectedJob" @applied="refreshJob" />
     </div>
 
     <section class="panel description-panel">
