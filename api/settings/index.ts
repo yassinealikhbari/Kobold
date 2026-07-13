@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
 import { getSupabase } from '../_lib/db.js';
-import { serializeJob } from '../_lib/jobs.js';
 import { isTelegramConfigured } from '../_lib/telegram.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -10,13 +9,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await requireAuth(req);
 
     if (req.method === 'GET') {
-      const [settings, hiddenJobs, runs, sourceHealth] = await Promise.all([
+      const [settings, runs, sourceHealth] = await Promise.all([
         getSettings(),
-        getHiddenJobs(),
         getRuns(),
         getSourceHealth(),
       ]);
-      res.status(200).json({ settings, hiddenJobs, runs, sourceHealth, telegramConfigured: isTelegramConfigured() });
+      res.status(200).json({ settings, runs, sourceHealth, telegramConfigured: isTelegramConfigured() });
       return;
     }
 
@@ -64,18 +62,6 @@ async function getSettings() {
     .single();
   if (insertError) throw insertError;
   return inserted;
-}
-
-async function getHiddenJobs() {
-  const { data, error } = await getSupabase()
-    .from('jobs')
-    .select('*, applications(id,status)')
-    .eq('status', 'dismissed')
-    .order('last_seen_at', { ascending: false })
-    .limit(100);
-
-  if (error) throw error;
-  return (data ?? []).map((row) => serializeJob(row as Parameters<typeof serializeJob>[0]));
 }
 
 async function getRuns() {

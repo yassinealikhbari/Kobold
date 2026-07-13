@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
 
 import { absoluteDate } from '@/lib/dates';
 import {
@@ -102,8 +101,8 @@ onMounted(() => {
             @dragstart="dragStart(application)"
             @click="applications.select(application)"
           >
-            <strong>{{ application.jobs.title }}</strong>
-            <span>{{ application.jobs.company }}</span>
+            <strong>{{ application.job_snapshot.title }}</strong>
+            <span>{{ application.job_snapshot.company }}</span>
             <small>{{ daysInColumn(application) }} d</small>
             <small v-if="application.notes">Notes</small>
           </article>
@@ -111,8 +110,8 @@ onMounted(() => {
       </section>
 
       <aside v-if="applications.selected" class="panel tracker-panel">
-        <h2>{{ applications.selected.jobs.title }}</h2>
-        <p class="subtle">{{ applications.selected.jobs.company }}</p>
+        <h2>{{ applications.selected.job_snapshot.title }}</h2>
+        <p class="subtle">{{ applications.selected.job_snapshot.company }}</p>
         <dl class="metadata-list single">
           <div>
             <dt>Status</dt>
@@ -132,7 +131,7 @@ onMounted(() => {
           <textarea v-model="applications.selected.cover_letter" rows="10"></textarea>
         </label>
         <div class="action-row">
-          <RouterLink class="button-link" :to="`/jobs/${applications.selected.jobs.id}`">Job detail</RouterLink>
+          <a class="button-link" :href="applications.selected.job_snapshot.apply_url ?? applications.selected.job_snapshot.url" target="_blank" rel="noreferrer">Open listing</a>
           <button type="button" @click="applications.deleteApplication(applications.selected.id)">Delete</button>
         </div>
       </aside>

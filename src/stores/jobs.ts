@@ -17,6 +17,7 @@ type JobsResponse = {
   total: number;
   page: number;
   hasMore: boolean;
+  issues?: Array<{ source: string; error: string }>;
 };
 
 let activeJobsRequest: AbortController | null = null;
@@ -43,6 +44,8 @@ export const useJobsStore = defineStore('jobs', {
     refreshing: false,
     error: null as string | null,
     refreshProgress: '',
+    dismissedJobIds: JSON.parse(localStorage.getItem('kobold-dismissed-jobs') ?? '[]') as string[],
+    savedJobIds: JSON.parse(localStorage.getItem('kobold-saved-jobs') ?? '[]') as string[],
     filters: {
       q: '',
       workplace: '',
@@ -77,8 +80,9 @@ export const useJobsStore = defineStore('jobs', {
 
         const response = await apiFetch<JobsResponse>(`/jobs?${params.toString()}`, { signal: controller.signal });
         if (requestSequence !== jobsRequestSequence) return;
-        this.jobs = append ? [...this.jobs, ...response.jobs] : response.jobs;
-        this.total = response.total;
+        const visible = response.jobs.filter((job) => !this.dismissedJobIds.includes(job.id));
+        this.jobs = append ? [...this.jobs, ...visible] : visible;
+        this.total = Math.max(0, response.total - this.dismissedJobIds.length);
         this.page = response.page;
         this.hasMore = response.hasMore;
       } catch (error) {
@@ -94,14 +98,17 @@ export const useJobsStore = defineStore('jobs', {
       return response.job;
     },
     async updateJobStatus(id: string, status: JobStatus) {
-      const response = await apiFetch<{ job: Job }>(`/jobs/${id}`, {
-        method: 'PATCH',
-        body: { status },
-      });
-
-      this.selectedJob = response.job;
+      if (status === 'dismissed' && !this.dismissedJobIds.includes(id)) {
+        this.dismissedJobIds.push(id);
+        localStorage.setItem('kobold-dismissed-jobs', JSON.stringify(this.dismissedJobIds));
+      }
       this.jobs = this.jobs.filter((job) => job.id !== id);
-      return response.job;
+      if (this.selectedJob?.id === id) this.selectedJob = null;
+    },
+    saveJobLocally(id: string) {
+      if (this.savedJobIds.includes(id)) return;
+      this.savedJobIds.push(id);
+      localStorage.setItem('kobold-saved-jobs', JSON.stringify(this.savedJobIds));
     },
     async fetchSyncStatus() {
       const response = await apiFetch<{ runs: IngestRun[] }>('/jobs/sync-status');
@@ -112,11 +119,8 @@ export const useJobsStore = defineStore('jobs', {
       this.error = null;
 
       try {
-        for (const source of sources) {
-          this.refreshProgress = source;
-          await apiFetch('/ingest?source=' + encodeURIComponent(source), { method: 'POST' });
-        }
-
+        this.refreshProgress = sources.length === 1 ? sources[0] : 'all sources';
+        this.filters.source = sources.length === 1 ? sources[0] : '';
         await this.fetchJobs();
         await this.fetchSyncStatus();
       } catch (error) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 
 import { apiFetch } from '@/lib/api';
@@ -25,7 +25,6 @@ const savingLetter = ref(false);
 const saving = ref(false);
 const error = ref('');
 const markingApplied = ref(false);
-let saveTimer: number | undefined;
 
 const copyFields = computed(() => [
   { label: 'Name', value: profile.profile.full_name },
@@ -50,35 +49,14 @@ async function copy(value: string | null) {
   await navigator.clipboard.writeText(value ?? '');
 }
 
-async function ensureApplication() {
-  if (application.value) return application.value;
-  const response = await apiFetch<{ application: Application }>('/applications', {
-    method: 'POST',
-    body: { job_id: props.job.id },
-  });
-  application.value = response.application;
-  letter.value = response.application.cover_letter ?? '';
-  return response.application;
-}
-
 async function fetchApplication() {
-  const response = await apiFetch<{ application: Application | null }>(`/applications?job_id=${encodeURIComponent(props.job.id)}`);
+  const response = await apiFetch<{ application: Application | null }>(`/applications?job_key=${encodeURIComponent(props.job.id)}`);
   application.value = response.application;
   letter.value = response.application?.cover_letter ?? '';
 }
 
 async function saveForLater() {
-  saving.value = true;
-  error.value = '';
-
-  try {
-    await ensureApplication();
-    emit('applicationChange');
-  } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : 'Failed to save job';
-  } finally {
-    saving.value = false;
-  }
+  error.value = 'Saved listings stay in this browser. Only submitted applications are added to Tracker.';
 }
 
 async function generateLetter() {
@@ -86,32 +64,15 @@ async function generateLetter() {
   error.value = '';
 
   try {
-    const response = await apiFetch<{ letter: string; application: Application }>('/cover-letter', {
+    const response = await apiFetch<{ letter: string }>('/cover-letter', {
       method: 'POST',
-      body: { job_id: props.job.id, instructions: instructions.value },
+      body: { job: props.job, instructions: instructions.value },
     });
-    application.value = response.application;
     letter.value = response.letter;
-    emit('applicationChange');
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : 'Cover letter generation failed';
   } finally {
     generating.value = false;
-  }
-}
-
-async function persistLetter() {
-  const current = await ensureApplication();
-  savingLetter.value = true;
-
-  try {
-    const response = await apiFetch<{ application: Application }>(`/applications/${current.id}`, {
-      method: 'PATCH',
-      body: { cover_letter: letter.value },
-    });
-    application.value = response.application;
-  } finally {
-    savingLetter.value = false;
   }
 }
 
@@ -125,10 +86,9 @@ async function markApplied() {
   error.value = '';
 
   try {
-    const current = await ensureApplication();
-    const response = await apiFetch<{ application: Application }>(`/applications/${current.id}`, {
-      method: 'PATCH',
-      body: { status: 'applied', cover_letter: letter.value },
+    const response = await apiFetch<{ application: Application }>('/applications', {
+      method: 'POST',
+      body: { job: props.job, cover_letter: letter.value },
     });
     application.value = response.application;
     emit('applicationChange');
@@ -138,14 +98,6 @@ async function markApplied() {
     markingApplied.value = false;
   }
 }
-
-watch(letter, () => {
-  window.clearTimeout(saveTimer);
-  if (!application.value) return;
-  saveTimer = window.setTimeout(() => {
-    void persistLetter();
-  }, 600);
-});
 
 onMounted(async () => {
   await profile.fetchProfile();
@@ -199,10 +151,7 @@ defineExpose({ saveForLater });
         </button>
       </div>
     </div>
-    <div v-else-if="application" class="application-state">
-      <strong>Saved to Tracker</strong>
-      <span>This role is saved for later and ready when you are.</span>
-    </div>
+    <div v-else-if="application" class="application-state"><strong>Application tracked</strong><span>This role is in your Tracker.</span></div>
     <p v-else class="subtle">Open the application form when you are ready. KOBOLD will then help you track the outcome.</p>
 
     <details class="prep-disclosure">

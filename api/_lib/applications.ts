@@ -1,10 +1,12 @@
 import { getSupabase } from './db.js';
+import type { LiveJob } from './live-jobs.js';
 
 export type ApplicationStatus = 'saved' | 'applied' | 'interviewing' | 'offer' | 'rejected';
 
 export type ApplicationRow = {
   id: string;
-  job_id: string;
+  job_key: string;
+  job_snapshot: LiveJob;
   status: ApplicationStatus;
   cover_letter: string | null;
   notes: string | null;
@@ -14,13 +16,21 @@ export type ApplicationRow = {
   updated_at: string;
 };
 
-export async function getOrCreateApplication(jobId: string): Promise<ApplicationRow> {
-  const existing = await getApplicationByJob(jobId);
+export async function createApplication(job: LiveJob, coverLetter?: string): Promise<ApplicationRow> {
+  const existing = await getApplicationByJobKey(job.id);
   if (existing) return existing;
 
+  const now = new Date().toISOString();
   const { data, error } = await getSupabase()
     .from('applications')
-    .insert({ job_id: jobId, status: 'saved' })
+    .insert({
+      job_key: job.id,
+      job_snapshot: job,
+      status: 'applied',
+      cover_letter: coverLetter ?? null,
+      applied_at: now,
+      status_changed_at: now,
+    })
     .select('*')
     .single();
 
@@ -28,22 +38,14 @@ export async function getOrCreateApplication(jobId: string): Promise<Application
   return data as ApplicationRow;
 }
 
-export async function getApplicationByJob(jobId: string): Promise<ApplicationRow | null> {
-  const { data, error } = await getSupabase()
-    .from('applications')
-    .select('*')
-    .eq('job_id', jobId)
-    .maybeSingle();
-
+export async function getApplicationByJobKey(jobKey: string): Promise<ApplicationRow | null> {
+  const { data, error } = await getSupabase().from('applications').select('*').eq('job_key', jobKey).maybeSingle();
   if (error) throw error;
   return data as ApplicationRow | null;
 }
 
 export async function updateApplication(id: string, patch: Partial<ApplicationRow>): Promise<ApplicationRow> {
-  const payload: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (patch.status) {
     payload.status = patch.status;
     payload.status_changed_at = new Date().toISOString();

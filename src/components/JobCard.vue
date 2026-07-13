@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 import { absoluteDate, relativeDate } from '@/lib/dates';
 import type { Job } from '@/types/jobs';
@@ -56,10 +56,7 @@ function openJob() {
         {{ relativeDate(job.posted_at ?? job.first_seen_at) }}
       </span>
       <div class="action-row" @click.stop @keydown.stop>
-        <RouterLink v-if="job.application" class="job-action job-action--secondary" to="/tracker">
-          {{ job.application.status === 'applied' ? 'Applied' : 'Saved' }}
-        </RouterLink>
-        <button v-else class="job-action job-action--secondary" type="button" @click="emit('save', job.id)">Save</button>
+        <button class="job-action job-action--secondary" type="button" @click="emit('save', job.id)">Save locally</button>
         <button class="job-action job-action--secondary" type="button" @click="emit('dismiss', job.id)">Dismiss</button>
         <a class="job-action job-action--primary" :href="job.apply_url ?? job.url" target="_blank" rel="noreferrer">Apply</a>
       </div>

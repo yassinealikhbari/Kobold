@@ -7,15 +7,7 @@ type FixtureOptions = {
   body?: unknown;
 };
 
-type FixtureApplication = Application & {
-  jobs: {
-    id: string;
-    title: string;
-    company: string;
-    url: string;
-    status: string;
-  };
-};
+type FixtureApplication = Application;
 
 const now = new Date();
 const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000).toISOString();
@@ -221,14 +213,15 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
 
   if (url.pathname === '/applications') {
     if (method === 'GET') {
-      const jobId = url.searchParams.get('job_id');
-      if (jobId) return { application: fixtureApplications.find((item) => item.job_id === jobId) ?? null } as T;
+      const jobKey = url.searchParams.get('job_key');
+      if (jobKey) return { application: fixtureApplications.find((item) => item.job_key === jobKey) ?? null } as T;
       return { applications: fixtureApplications } as T;
     }
 
     if (method === 'POST') {
-      const jobId = typeof body.job_id === 'string' ? body.job_id : '';
-      return { application: createApplication(jobId) } as T;
+      const job = body.job as Job | undefined;
+      if (!job) throw new Error('Fixture job snapshot is required');
+      return { application: createApplication(job) } as T;
     }
   }
 
@@ -256,11 +249,9 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
   }
 
   if (url.pathname === '/cover-letter' && method === 'POST') {
-    const jobId = typeof body.job_id === 'string' ? body.job_id : '';
-    const application = createApplication(jobId);
-    application.cover_letter = `Dear hiring team,\n\nI am excited to apply for the ${application.jobs.title} role at ${application.jobs.company}. My experience building Vue.js and TypeScript products would let me contribute quickly to your team.\n\nBest regards,\nAlex Example`;
-    application.updated_at = new Date().toISOString();
-    return { letter: application.cover_letter, application } as T;
+    const job = body.job as Job | undefined;
+    if (!job) throw new Error('Fixture job snapshot is required');
+    return { letter: `Dear hiring team,\n\nI am excited to apply for the ${job.title} role at ${job.company}. My experience building Vue.js and TypeScript products would let me contribute quickly to your team.\n\nBest regards,\nAlex Example` } as T;
   }
 
   if (url.pathname === '/profile') {
@@ -318,32 +309,25 @@ function filterJobs(url: URL): Job[] {
 }
 
 function serializeJob(job: Job): Job {
-  const application = fixtureApplications.find((item) => item.job_id === job.id);
-  return {
-    ...job,
-    application: application ? { id: application.id, status: application.status } : null,
-  };
+  return { ...job, application: null };
 }
 
-function createApplication(jobId: string): FixtureApplication {
-  const existing = fixtureApplications.find((item) => item.job_id === jobId);
+function createApplication(job: Job): FixtureApplication {
+  const existing = fixtureApplications.find((item) => item.job_key === job.id);
   if (existing) return existing;
-
-  const job = fixtureJobs.find((item) => item.id === jobId);
-  if (!job) throw new Error('Fixture job not found');
 
   const timestamp = new Date().toISOString();
   const application: FixtureApplication = {
     id: `fixture-application-${fixtureApplications.length + 1}`,
-    job_id: jobId,
-    status: 'saved',
+    job_key: job.id,
+    job_snapshot: job,
+    status: 'applied',
     cover_letter: null,
     notes: null,
     applied_at: null,
     status_changed_at: timestamp,
     created_at: timestamp,
     updated_at: timestamp,
-    jobs: { id: job.id, title: job.title, company: job.company, url: job.url, status: job.status },
   };
   fixtureApplications.push(application);
   return application;

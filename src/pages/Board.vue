@@ -5,7 +5,6 @@ import FilterBar from '@/components/FilterBar.vue';
 import JobCard from '@/components/JobCard.vue';
 import SyncStatus from '@/components/SyncStatus.vue';
 import TagChip from '@/components/TagChip.vue';
-import { apiFetch } from '@/lib/api';
 import { SOURCES, useJobsStore } from '@/stores/jobs';
 
 const jobs = useJobsStore();
@@ -35,11 +34,7 @@ async function dismiss(id: string) {
 }
 
 async function save(id: string) {
-  await apiFetch('/applications', {
-    method: 'POST',
-    body: { job_id: id },
-  });
-  await jobs.fetchJobs();
+  jobs.saveJobLocally(id);
 }
 
 function resetFilters() {

@@ -4,13 +4,7 @@ import { apiFetch } from '@/lib/api';
 import type { Application, ApplicationStatus } from '@/types/applications';
 
 export type TrackedApplication = Application & {
-  jobs: {
-    id: string;
-    title: string;
-    company: string;
-    url: string;
-    status: string;
-  };
+  job_snapshot: Application['job_snapshot'];
 };
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = ['saved', 'applied', 'interviewing', 'offer', 'rejected'];

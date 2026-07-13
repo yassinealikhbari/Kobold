@@ -12,12 +12,12 @@ Personal job-hunting tool for Yassine Alikhbari. Aggregates full-time Vue.js rol
 | Database & files | Supabase (Postgres + Storage for CV PDF) — accessed **only** from serverless functions via service-role key |
 | Auth | Single shared password → signed JWT in HttpOnly cookie |
 | Sources | Arbeitnow API, VueJobs feed, BerlinStartupJobs, GermanTechJobs, Working Nomads API, Remote OK API |
-| Ingestion | Scheduled cron + manual refresh; results persisted in Supabase |
+| Listings | Live source fetch through `/api`; never persisted in Supabase |
 | Cover letters | OpenAI `gpt-4o-mini`, generated per job from profile + job description, editable before use |
 | CV | One static PDF in Supabase Storage, served via signed URL |
 | Apply flow | Prep panel (copy-ready fields + letter + CV) that opens the ATS form; no auto-submit |
-| Tracking | Kanban: saved → applied → interviewing → offer / rejected, with notes and dates |
-| Notifications | Telegram bot, instant message per new matching job (batched if many) |
+| Tracking | Kanban: applied → interviewing → offer / rejected, with notes, dates, and a job snapshot saved on submission |
+| Notifications | Disabled while listings are live-only; source health remains available |
 | Filters | Vue/Nuxt relevance; Berlin OR remote-in-Europe; full-time; mid+senior (junior excluded); German-required listings excluded |
 
 ---
@@ -89,6 +89,10 @@ Key principle: **the browser never talks to Supabase or any third party directly
 
 ## 2. Data model (Supabase Postgres)
 
+`jobs` is legacy-only and is not read or written by the product. Source results
+exist only for the request that fetched them. New application records own the
+listing snapshot captured when the user confirms submission.
+
 ```sql
 create table jobs (
   id            uuid primary key default gen_random_uuid(),
@@ -119,15 +123,16 @@ create index jobs_status_score_idx on jobs (status, score desc, posted_at desc);
 
 create table applications (
   id            uuid primary key default gen_random_uuid(),
-  job_id        uuid not null references jobs(id) on delete cascade,
-  status        text not null default 'saved'
+  job_key       text unique not null,
+  job_snapshot  jsonb not null,
+  status        text not null default 'applied'
                 check (status in ('saved','applied','interviewing','offer','rejected')),
   cover_letter  text,
   notes         text,
   applied_at    timestamptz,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  unique (job_id)                              -- one application per job
+                                                -- one application per live listing
 );
 
 create table profile (                          -- single-row table
@@ -276,14 +281,14 @@ During each full ingest cycle, jobs whose `last_seen_at` < now − 7 days → `s
 | `/auth/login` | POST | `{password}` | Sets HttpOnly cookie `vjh_session` (JWT, 30-day exp, `Secure`, `SameSite=Lax`). 401 on wrong password. Constant-time compare. Rate-limit: after 5 failures within 15 min (in-memory Map keyed by IP), respond 429. |
 | `/auth/logout` | POST | — | Clears cookie. |
 | `/auth/session` | GET | — | `{authenticated: bool}` — SPA boot check. |
-| `/jobs` | GET | `?status=active&workplace=&minScore=&q=&source=&sort=score|posted&page=` | `{jobs: JobWithApplication[], total}` (join application status onto each job). Page size 50. |
-| `/jobs/[id]` | GET / PATCH | PATCH body: `{status: 'dismissed'}` (only transition allowed from UI) | Job detail / updated job. |
-| `/ingest` | POST | `?source=<name>` + header `x-cron-secret` **or** auth cookie (manual refresh button) | `{run: IngestRun}`. One source per invocation (stays under function time limits). `source=lifecycle` runs the stale/expired pass. |
+| `/jobs` | GET | `?workplace=&minScore=&q=&source=&sort=score|posted&page=` | Live, in-memory normalized source results. Page size 50. |
+| `/jobs/[id]` | GET | Live job detail resolved from the sources using its dedupe key. |
+| `/ingest` | POST | `?source=<name>` + header `x-cron-secret` **or** auth cookie | Source health and optional notifications only; it never writes listings. |
 | `/profile` | GET / PUT | PUT: full profile object | Profile row. |
 | `/profile/cv` | POST / GET | POST: multipart PDF (≤5 MB, `application/pdf` only) → stores to `documents/cv.pdf`, updates `profile.cv_path`. GET → `{url}` signed URL, 10 min expiry. | |
-| `/applications` | GET / POST | POST: `{job_id}` → creates with status `saved` | List (joined with job title/company) / created row. |
+| `/applications` | GET / POST | POST: `{job, cover_letter?}` after confirmation | List / creates an `applied` row with an embedded job snapshot. |
 | `/applications/[id]` | PATCH / DELETE | `{status?, notes?, cover_letter?}`; setting status to `applied` auto-sets `applied_at` if null | Updated row. |
-| `/cover-letter` | POST | `{job_id, instructions?}` | `{letter}` — also persisted to the application row (creates `saved` application if none). |
+| `/cover-letter` | POST | `{job, instructions?}` | `{letter}` — draft stays in the browser until application submission. |
 
 **Auth implementation:** `requireAuth(req)` in `_lib/auth.ts` verifies the JWT (HS256, `SESSION_SECRET` env) and throws 401. Every handler except `login` and secret-authenticated `ingest` calls it first. The ingest secret comparison is constant-time.
 
@@ -315,9 +320,8 @@ POST /api/ingest?source=arbeitnow
   → insert ingest_runs row (started)
   → adapter.fetchJobs()                    // isolated try/catch
   → for each RawJob: relevance → location → type → seniority → language
-  → normalize + score + dedupe upsert
-  → collect NEW active jobs with score ≥ min_score_notify
-  → send Telegram notifications (§7)
+  → normalize + score for source-health counts
+  → finalize ingest_runs row (no listing persistence or notification)
   → finalize ingest_runs row (counts / error)
 ```
 
@@ -339,16 +343,11 @@ Concurrency guard: if an unfinished `ingest_runs` row for the same source is you
 
 ---
 
-## 7. Telegram notifications
+## 7. Notifications
 
-Setup (documented in README): create bot via @BotFather → `TELEGRAM_BOT_TOKEN`; get your chat id by messaging the bot and calling `getUpdates` → `TELEGRAM_CHAT_ID`.
-
-- Trigger: end of each ingest run, for **newly inserted** jobs (not updates) with `status='active'` and `score ≥ min_score_notify`, if `settings.notify_enabled`.
-- ≤3 new jobs → one message each:
-  `🆕 {title}\n🏢 {company} · 📍 {location} · {workplace}\n⭐ score {score} · via {source}\n{app_url}/jobs/{id}` — link to **your app's** job detail (not the raw listing) so the apply flow is one tap away.
-- >3 new jobs in one run → single digest message listing them (avoids notification spam and Telegram's 30 msg/s limit).
-- Escape MarkdownV2 special characters in all interpolated text, or send `parse_mode: undefined` plain text (simpler — **do plain text**).
-- Telegram API failure: log to `ingest_runs.error` suffix, never fail the ingest itself.
+Notifications are disabled. A live-only listing feed has no durable source
+fingerprint, so it cannot determine whether a listing is new without producing
+duplicates. Ingest remains available for source-health diagnostics only.
 
 ---
 

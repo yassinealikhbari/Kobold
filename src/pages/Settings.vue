@@ -21,22 +21,6 @@ onMounted(() => {
     <p v-if="settings.error" class="form-error">{{ settings.error }}</p>
 
     <section class="panel form-section">
-      <h2>Notifications</h2>
-      <p v-if="!settings.telegramConfigured" class="form-hint">Configure Telegram credentials to enable notifications.</p>
-      <label class="check-field">
-        <input v-model="settings.settings.notify_enabled" type="checkbox" :disabled="!settings.telegramConfigured" />
-        <span>Telegram notifications enabled</span>
-      </label>
-      <label>
-        Minimum score
-        <input v-model.number="settings.settings.min_score_notify" type="number" min="-3" max="12" />
-      </label>
-      <button type="button" :disabled="settings.saving" @click="settings.saveSettings">
-        {{ settings.saving ? 'Saving' : 'Save settings' }}
-      </button>
-    </section>
-
-    <section class="panel form-section">
       <h2>Source Health</h2>
       <div v-if="settings.sourceHealth.length === 0" class="subtle">No source runs recorded yet.</div>
       <article v-for="source in settings.sourceHealth" :key="source.source" class="settings-row">
@@ -49,18 +33,6 @@ onMounted(() => {
           <p v-if="source.last_error" class="form-error">{{ source.last_error }}</p>
         </div>
         <button type="button" :disabled="settings.saving" @click="settings.rerunSource(source.source)">Rerun</button>
-      </article>
-    </section>
-
-    <section class="panel form-section">
-      <h2>Hidden Jobs</h2>
-      <div v-if="settings.hiddenJobs.length === 0" class="subtle">No hidden jobs.</div>
-      <article v-for="job in settings.hiddenJobs" :key="job.id" class="settings-row">
-        <div>
-          <strong>{{ job.title }}</strong>
-          <p class="subtle">{{ job.company }} · {{ job.german_required ? 'German filtered' : 'Dismissed' }}</p>
-        </div>
-        <button type="button" @click="settings.restoreJob(job.id)">Restore</button>
       </article>
     </section>
 

@@ -36,7 +36,6 @@ CRON_SECRET=
 OPENAI_API_KEY=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
-APP_URL=
 ```
 
 No variable should be prefixed with `VITE_`.
@@ -45,22 +44,26 @@ No variable should be prefixed with `VITE_`.
 
 1. Create a Supabase project.
 2. Run each SQL file in `supabase/migrations/` in filename order in the SQL editor.
-   The current app requires migrations `002`, `003`, and `004`; do not deploy
+   The current app requires migrations `002`, `003`, `004`, and `005`; do not deploy
    API changes before applying them.
 3. Create a private Storage bucket named `documents`.
 4. Put `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel project environment variables.
 
 The browser never uses Supabase directly. All database and Storage access goes through `/api`.
 
-## Telegram Setup
+## Notifications
 
-1. Create a bot with `@BotFather`.
-2. Save the token as `TELEGRAM_BOT_TOKEN`.
-3. Send a message to the bot.
-4. Call `https://api.telegram.org/bot<token>/getUpdates`.
-5. Save your chat id as `TELEGRAM_CHAT_ID`.
+Scheduled source probes currently record source health only. Notifications are
+intentionally disabled because KOBOLD no longer stores source fingerprints and
+therefore cannot identify a genuinely new listing without sending duplicates.
 
-Notifications link to `APP_URL/jobs/:id`, so set `APP_URL` to the production Vercel URL.
+## Listing Persistence
+
+The Board and job detail fetch live listings from their sources through `/api`.
+KOBOLD does not store or read job listings from Supabase. A complete listing
+snapshot is saved only when you confirm **I applied**, so the Tracker remains
+available even after the source listing disappears. Saved and dismissed listings
+are kept only in the current browser.
 
 ## Cron Setup
 
@@ -105,5 +108,5 @@ npm run test:sources
 3. Add all environment variables from `.env.example`.
 4. Deploy.
 5. Log in with `APP_PASSWORD`.
-6. Configure cron-job.org jobs with `CRON_SECRET`.
-7. Run a manual refresh from the Board and confirm ingest history in Settings.
+6. Configure cron-job.org jobs with `CRON_SECRET` if you want source-health checks.
+7. Run a Board refresh and confirm live listings render.

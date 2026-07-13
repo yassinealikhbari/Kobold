@@ -1,52 +1,30 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { requireAuth, sendError } from '../_lib/auth.js';
-import { getSupabase } from '../_lib/db.js';
-import { getJobById } from '../_lib/jobs.js';
+import { findLiveJob } from '../_lib/live-jobs.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    res.status(405).json({ error: 'Job status is kept in this browser. Only GET is supported.' });
+    return;
+  }
+
   try {
     await requireAuth(req);
-
     const id = typeof req.query.id === 'string' ? req.query.id : '';
     if (!id) {
       res.status(400).json({ error: 'Job id is required' });
       return;
     }
 
-    if (req.method === 'GET') {
-      const job = await getJobById(id);
-      if (!job) {
-        res.status(404).json({ error: 'Job not found' });
-        return;
-      }
-
-      res.status(200).json({ job });
+    const job = await findLiveJob(id);
+    if (!job) {
+      res.status(404).json({ error: 'This listing is no longer available from its source.' });
       return;
     }
-
-    if (req.method === 'PATCH') {
-      const status = req.body?.status;
-      if (status !== 'dismissed' && status !== 'active') {
-        res.status(400).json({ error: 'Only dismissed or active status updates are supported' });
-        return;
-      }
-
-      const { error } = await getSupabase().from('jobs').update({ status }).eq('id', id);
-      if (error) throw error;
-
-      const job = await getJobById(id);
-      res.status(200).json({ job });
-      return;
-    }
-
-    res.setHeader('Allow', 'GET, PATCH');
-    res.status(405).json({ error: 'Method not allowed' });
+    res.status(200).json({ job });
   } catch (error) {
-    sendError(res, error, {
-      route: '/api/jobs/:id',
-      method: req.method,
-      entityId: typeof req.query.id === 'string' ? req.query.id : undefined,
-    });
+    sendError(res, error, { route: '/api/jobs/:id', method: req.method });
   }
 }

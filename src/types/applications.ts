@@ -2,7 +2,8 @@ export type ApplicationStatus = 'saved' | 'applied' | 'interviewing' | 'offer' |
 
 export type Application = {
   id: string;
-  job_id: string;
+  job_key: string;
+  job_snapshot: import('./jobs').Job;
   status: ApplicationStatus;
   cover_letter: string | null;
   notes: string | null;
