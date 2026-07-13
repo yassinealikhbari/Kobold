@@ -30,16 +30,19 @@ export type JobResponse = {
   } | null;
 };
 
-type JobRow = Omit<JobResponse, 'application'> & {
+type JobRow = Omit<JobResponse, 'application' | 'score_reasons'> & {
+  // Rows created before migration 004 do not have score explanations yet.
+  score_reasons?: string[] | null;
   applications?: Array<{ id: string; status: string }> | null;
 };
 
 export function serializeJob(row: JobRow): JobResponse {
   const application = row.applications?.[0] ?? null;
-  const { applications: _applications, ...job } = row;
+  const { applications: _applications, score_reasons, ...job } = row;
 
   return {
     ...job,
+    score_reasons: Array.isArray(score_reasons) ? score_reasons : [],
     application,
   };
 }

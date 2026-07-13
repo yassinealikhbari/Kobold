@@ -40,8 +40,8 @@ function locationBadge(job: Job): string {
       <span v-for="source in job.sources" :key="source" class="chip muted">{{ source }}</span>
     </div>
 
-    <p v-if="job.score_reasons.length" class="score-reasons">
-      {{ job.score_reasons.slice(0, 3).join(' · ') }}
+    <p v-if="job.score_reasons?.length" class="score-reasons">
+      {{ job.score_reasons?.slice(0, 3).join(' · ') }}
     </p>
 
     <div class="job-card-footer">

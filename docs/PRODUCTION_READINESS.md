@@ -17,6 +17,9 @@ environment, database, or scheduling change.
 ## Supabase
 
 - [ ] Every file in `supabase/migrations/` has been applied in filename order.
+  In particular, `003_ingest_health.sql` and `004_board_explanations.sql` are
+  required by the current production API. Without `004`, legacy jobs can lack
+  score explanations and ingestion cannot write its current run metrics.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.

@@ -54,7 +54,7 @@ onMounted(async () => {
           </div>
           <div>
             <dt>Score</dt>
-            <dd>{{ jobs.selectedJob.score }} · {{ jobs.selectedJob.score_reasons.join(', ') || 'No score signals' }}</dd>
+            <dd>{{ jobs.selectedJob.score }} · {{ jobs.selectedJob.score_reasons?.join(', ') || 'No score signals' }}</dd>
           </div>
           <div>
             <dt>Posted</dt>
