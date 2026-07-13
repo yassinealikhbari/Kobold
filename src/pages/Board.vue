@@ -65,7 +65,14 @@ onMounted(async () => {
     <p v-if="jobs.error" class="form-error">{{ jobs.error }}</p>
 
     <div v-if="jobs.loading" class="panel">Loading jobs...</div>
-    <div v-else-if="jobs.jobs.length === 0" class="panel">No matching jobs.</div>
+    <div v-else-if="jobs.jobs.length === 0" class="panel empty-state">
+      <p>No matching jobs.</p>
+      <p v-if="jobs.syncRuns[0]" class="subtle">
+        Last run: {{ jobs.syncRuns[0].source }} found {{ jobs.syncRuns[0].found }},
+        matched {{ jobs.syncRuns[0].matched }}, inserted {{ jobs.syncRuns[0].inserted }}.
+      </p>
+      <p v-if="jobs.syncRuns[0]?.error" class="form-error">{{ jobs.syncRuns[0].error }}</p>
+    </div>
     <div v-else class="job-list">
       <div class="result-count">{{ jobs.total }} matching jobs</div>
       <JobCard v-for="job in jobs.jobs" :key="job.id" :job="job" @save="save" @dismiss="dismiss" />

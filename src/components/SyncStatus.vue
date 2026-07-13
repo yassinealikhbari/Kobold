@@ -22,7 +22,7 @@ const latest = computed(() => props.runs[0] ?? null);
 
     <span v-if="refreshing">Refreshing {{ progress }}</span>
     <span v-else-if="latest" :title="absoluteDate(latest.started_at)">
-      Synced {{ relativeDate(latest.started_at) }}
+      {{ latest.source }} synced {{ relativeDate(latest.started_at) }}
     </span>
     <span v-else>No sync runs</span>
 
