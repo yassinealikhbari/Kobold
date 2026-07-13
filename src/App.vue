@@ -12,10 +12,14 @@ const navItems = [
 <template>
   <div class="app-shell">
     <aside class="sidebar">
-      <RouterLink class="brand" to="/">Vue Job Hunter</RouterLink>
+      <RouterLink class="brand" to="/">
+        <span class="brand-kicker">VJH / 2026</span>
+        <span class="brand-wordmark">Vue Job Hunter</span>
+      </RouterLink>
       <nav class="nav-list" aria-label="Main navigation">
-        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to">
-          {{ item.label }}
+        <RouterLink v-for="(item, index) in navItems" :key="item.to" :to="item.to">
+          <span class="nav-index">0{{ index + 1 }}</span>
+          <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
     </aside>
