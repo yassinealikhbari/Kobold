@@ -1,4 +1,4 @@
-import { getSupabase } from './db';
+import { getSupabase } from './db.js';
 
 export type ApplicationStatus = 'saved' | 'applied' | 'interviewing' | 'offer' | 'rejected';
 

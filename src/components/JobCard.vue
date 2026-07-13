@@ -9,6 +9,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
+  save: [id: string];
   dismiss: [id: string];
 }>();
 
@@ -44,7 +45,7 @@ function locationBadge(job: Job): string {
         {{ relativeDate(job.posted_at ?? job.first_seen_at) }}
       </span>
       <div class="action-row">
-        <RouterLink class="text-button" :to="`/jobs/${job.id}`">Save</RouterLink>
+        <button class="text-button" type="button" @click="emit('save', job.id)">Save</button>
         <button class="text-button" type="button" @click="emit('dismiss', job.id)">Dismiss</button>
         <a class="text-button" :href="job.url" target="_blank" rel="noreferrer">Open listing</a>
       </div>

@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue';
 import FilterBar from '@/components/FilterBar.vue';
 import JobCard from '@/components/JobCard.vue';
 import SyncStatus from '@/components/SyncStatus.vue';
+import { apiFetch } from '@/lib/api';
 import { SOURCES, useJobsStore } from '@/stores/jobs';
 
 const jobs = useJobsStore();
@@ -19,6 +20,14 @@ function scheduleFetch() {
 
 async function dismiss(id: string) {
   await jobs.updateJobStatus(id, 'dismissed');
+}
+
+async function save(id: string) {
+  await apiFetch('/applications', {
+    method: 'POST',
+    body: { job_id: id },
+  });
+  await jobs.fetchJobs();
 }
 
 async function refresh() {
@@ -59,7 +68,7 @@ onMounted(async () => {
     <div v-else-if="jobs.jobs.length === 0" class="panel">No matching jobs.</div>
     <div v-else class="job-list">
       <div class="result-count">{{ jobs.total }} matching jobs</div>
-      <JobCard v-for="job in jobs.jobs" :key="job.id" :job="job" @dismiss="dismiss" />
+      <JobCard v-for="job in jobs.jobs" :key="job.id" :job="job" @save="save" @dismiss="dismiss" />
     </div>
   </section>
 </template>
