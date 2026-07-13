@@ -24,7 +24,6 @@ export const SOURCES = [
   'remoteok',
   'berlinstartupjobs',
   'germantechjobs',
-  'stepstone',
 ];
 
 export const useJobsStore = defineStore('jobs', {

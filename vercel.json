@@ -1,5 +1,6 @@
 {
   "buildCommand": "npm run build",
+  "devCommand": "npm run dev:vite -- --host 127.0.0.1",
   "outputDirectory": "dist",
   "framework": "vite",
   "crons": [

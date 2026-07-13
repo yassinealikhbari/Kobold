@@ -27,7 +27,6 @@ CRON_SECRET=
 OPENAI_API_KEY=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
-SCRAPERAPI_KEY=
 APP_URL=
 ```
 
@@ -52,10 +51,6 @@ The browser never uses Supabase directly. All database and Storage access goes t
 
 Notifications link to `APP_URL/jobs/:id`, so set `APP_URL` to the production Vercel URL.
 
-## ScraperAPI
-
-StepStone ingestion no-ops unless `SCRAPERAPI_KEY` is configured. Keep StepStone on the limited schedule below to preserve quota.
-
 ## Cron Setup
 
 Use cron-job.org for source ingestion. Every job should call:
@@ -75,7 +70,6 @@ Schedule:
 | `:15` | `remoteok` |
 | `:20` | `berlinstartupjobs` |
 | `:25` | `germantechjobs` |
-| `06:30`, `18:30` | `stepstone` |
 | `04:00` | `lifecycle` |
 
 `vercel.json` also defines a daily lifecycle cron as a fallback.
@@ -89,7 +83,7 @@ npm run build
 npm run test:sources
 ```
 
-`npm run test:sources` makes live network calls and may return zero jobs for some sources. StepStone returns zero unless `SCRAPERAPI_KEY` is present.
+`npm run test:sources` makes live network calls and may return zero jobs for some sources.
 
 ## Deploy
 

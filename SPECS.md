@@ -11,7 +11,7 @@ Personal job-hunting tool for Yassine Alikhbari. Aggregates full-time Vue.js rol
 | Hosting | Vercel |
 | Database & files | Supabase (Postgres + Storage for CV PDF) — accessed **only** from serverless functions via service-role key |
 | Auth | Single shared password → signed JWT in HttpOnly cookie |
-| Sources | Arbeitnow API, VueJobs feed, StepStone (via scraping service), BerlinStartupJobs, GermanTechJobs, Working Nomads API, Remote OK API |
+| Sources | Arbeitnow API, VueJobs feed, BerlinStartupJobs, GermanTechJobs, Working Nomads API, Remote OK API |
 | Ingestion | Scheduled cron + manual refresh; results persisted in Supabase |
 | Cover letters | OpenAI `gpt-4o-mini`, generated per job from profile + job description, editable before use |
 | CV | One static PDF in Supabase Storage, served via signed URL |
@@ -40,8 +40,8 @@ Vercel /api functions (TypeScript)
    ▼
 Supabase (Postgres + Storage bucket `documents`)
 
-External: Arbeitnow, VueJobs RSS, ScraperAPI→StepStone,
-BerlinStartupJobs RSS, GermanTechJobs, Working Nomads API,
+External: Arbeitnow, VueJobs RSS, BerlinStartupJobs RSS,
+GermanTechJobs, Working Nomads API,
 Remote OK API, OpenAI API, Telegram Bot API,
 cron-job.org (scheduler — see §6.3)
 ```
@@ -63,7 +63,6 @@ Key principle: **the browser never talks to Supabase or any third party directly
 │  │     ├─ types.ts         # SourceAdapter interface, RawJob
 │  │     ├─ arbeitnow.ts
 │  │     ├─ vuejobs.ts
-│  │     ├─ stepstone.ts
 │  │     ├─ berlinstartupjobs.ts
 │  │     ├─ germantechjobs.ts
 │  │     ├─ workingnomads.ts
@@ -187,11 +186,10 @@ interface SourceAdapter {
 |---|---|---|---|
 | 1 | **Arbeitnow** | Public JSON API, no key | `GET https://www.arbeitnow.com/api/job-board-api?page=N`, pages 1–5, 500 ms delay between pages. Fields: `slug, company_name, title, description (HTML), remote (bool), url, tags[], job_types[], location, created_at (unix seconds)`. Pre-filter server-side: keep items matching Vue regex (§4.1) before normalizing. |
 | 2 | **VueJobs** | RSS feed | Try `https://vuejobs.com/feed` then `https://app.vuejobs.com/feed/posts`. Parse `<item>` blocks (title, link, pubDate, description). Title is usually `"{role} at {company}"` — split on last `" at "`; if no match, company = `"(see listing)"`. All items are Vue-relevant by definition; still apply location/language/seniority filters. |
-| 3 | **StepStone** | Via ScraperAPI (free tier ~1k req/mo) | `GET https://api.scraperapi.com?api_key=${SCRAPERAPI_KEY}&url=${encodeURIComponent('https://www.stepstone.de/jobs/vue.js/in-berlin?radius=30&action=facet_selected')}` and a second query for `vue.js` + `remote`. Parse embedded JSON: look for `<script type="application/ld+json">` `ItemList`/`JobPosting` blocks first; fallback to `window.__PRELOADED_STATE__` JSON extraction. **This is the most brittle adapter — wrap everything, return `[]` on any parse failure, record error in `ingest_runs`. Cap at 2 requests per run to preserve quota (≈16/day at 3-hour cadence… budget: run StepStone only every 4th cron run — see §6.2).** |
-| 4 | **BerlinStartupJobs** | WordPress RSS | `GET https://berlinstartupjobs.com/?s=vue&feed=rss2`. Standard RSS. Company often embedded in title (`"Company: Role"` or `"Role // Company"`) — parse best-effort, fallback `"(see listing)"`. All results are Berlin by definition. |
-| 5 | **GermanTechJobs** | Scrape | `GET https://germantechjobs.de/jobs/Vue/Berlin` and `/jobs/Vue/Remote`. Parse `application/ld+json` `JobPosting` entries (the site embeds them). If markup changes and nothing parses, return `[]` + log. |
-| 6 | **Working Nomads** | Public JSON API | `GET https://www.workingnomads.com/api/exposed_jobs/` → array of `{url, title, description, company_name, category_name, tags, location, pub_date}`. Keep items where tags/title match Vue regex AND location matches Europe heuristic (§4.2). |
-| 7 | **Remote OK** | Public JSON API | `GET https://remoteok.com/api` with `User-Agent` header set (they require one). **First array element is a legal-notice object — skip it.** Fields: `position, company, tags[], location, url, date, salary_min/max`. Keep items where tags include `vue`/`nuxt` AND location matches Europe heuristic. Their ToS requires linking back to the Remote OK URL — always use their `url` as the listing link. |
+| 3 | **BerlinStartupJobs** | WordPress RSS | `GET https://berlinstartupjobs.com/?s=vue&feed=rss2`. Standard RSS. Company often embedded in title (`"Company: Role"` or `"Role // Company"`) — parse best-effort, fallback `"(see listing)"`. All results are Berlin by definition. |
+| 4 | **GermanTechJobs** | Scrape | `GET https://germantechjobs.de/jobs/Vue/Berlin` and `/jobs/Vue/Remote`. Parse `application/ld+json` `JobPosting` entries (the site embeds them). If markup changes and nothing parses, return `[]` + log. |
+| 5 | **Working Nomads** | Public JSON API | `GET https://www.workingnomads.com/api/exposed_jobs/` → array of `{url, title, description, company_name, category_name, tags, location, pub_date}`. Keep items where tags/title match Vue regex AND location matches Europe heuristic (§4.2). |
+| 6 | **Remote OK** | Public JSON API | `GET https://remoteok.com/api` with `User-Agent` header set (they require one). **First array element is a legal-notice object — skip it.** Fields: `position, company, tags[], location, url, date, salary_min/max`. Keep items where tags include `vue`/`nuxt` AND location matches Europe heuristic. Their ToS requires linking back to the Remote OK URL — always use their `url` as the listing link. |
 
 **Shared adapter rules**
 
@@ -325,12 +323,12 @@ POST /api/ingest?source=arbeitnow
 
 ### 6.2 Schedule
 
-Every 3 hours per source, staggered to avoid burst; StepStone only twice daily to conserve ScraperAPI quota; lifecycle pass once daily:
+Every 3 hours per source, staggered to avoid burst; lifecycle pass once daily:
 
 ```
 :00  arbeitnow      :05 vuejobs        :10 workingnomads
 :15  remoteok       :20 berlinstartupjobs   :25 germantechjobs
-06:30 & 18:30 stepstone      04:00 lifecycle
+04:00 lifecycle
 ```
 
 ### 6.3 Scheduler — important Vercel constraint
@@ -383,7 +381,6 @@ APP_PASSWORD=            # your login password
 CRON_SECRET=             # random; shared with cron-job.org
 OPENAI_API_KEY=
 TELEGRAM_BOT_TOKEN=      TELEGRAM_CHAT_ID=
-SCRAPERAPI_KEY=          # optional; StepStone adapter no-ops without it
 APP_URL=                 # https://<app>.vercel.app, used in Telegram links
 ```
 
@@ -407,7 +404,7 @@ APP_URL=                 # https://<app>.vercel.app, used in Telegram links
 | 10 | Dismissed job re-ingested | Upsert never downgrades status; stays dismissed |
 | 11 | Cron overlap / retry storms | 409 concurrency guard per source |
 | 12 | Vercel Hobby cron limits | External scheduler (cron-job.org) + secret header |
-| 13 | ScraperAPI quota exhausted | StepStone runs 2×/day; adapter no-ops without key |
+| 13 | Optional scraping provider quota exhausted | Keep provider-backed sources out of the default source list unless a free/stable option is available |
 | 14 | Remote OK legal-notice element | Skip first array item; keep their URL as listing link (ToS) |
 | 15 | OpenAI down / over quota | 502 surfaced in panel; retry button; rest of panel functional |
 | 16 | Job description huge | Truncation limits (§3 shared rules; 6 k chars into prompt) |
@@ -440,7 +437,7 @@ Feed one phase at a time. Each is self-contained and ends with acceptance criter
 > **Accept when:** all tests pass; German-with-plus survives; US-only remote discarded; (m/w/d) titles collide on dedupe key.
 
 **Phase 3 — Source adapters.**
-> Implement the 7 adapters per SPEC.md §3 with the shared rules (timeout, retry, truncation, drop-empty). Arbeitnow, Working Nomads, Remote OK are JSON; VueJobs and BerlinStartupJobs parse RSS with a small hand-rolled or lightweight parser; GermanTechJobs parses JSON-LD; StepStone goes through ScraperAPI and no-ops without the key. Each returns `RawJob[]`.
+> Implement the 6 adapters per SPEC.md §3 with the shared rules (timeout, retry, truncation, drop-empty). Arbeitnow, Working Nomads, Remote OK are JSON; VueJobs and BerlinStartupJobs parse RSS with a small hand-rolled or lightweight parser; GermanTechJobs parses JSON-LD. Each returns `RawJob[]`.
 > **Accept when:** a local script `npm run test:sources` fetches each source live and prints counts; a failing source prints its error without crashing others.
 
 **Phase 4 — Ingest pipeline.**
@@ -468,7 +465,7 @@ Feed one phase at a time. Each is self-contained and ends with acceptance criter
 > **Accept when:** fresh matching job triggers a message linking to the app's detail page; 5 new jobs produce one digest; disabling toggle silences it.
 
 **Phase 10 — Hardening & deploy.**
-> Security/UX pass: verify no secrets in client bundle (`grep` dist for key fragments), DOMPurify coverage, empty/loading/error states on all pages, Lighthouse sanity. Write README: Supabase setup (SQL, bucket), BotFather walkthrough, ScraperAPI signup, Vercel env vars + deploy, cron-job.org schedule table from §6.2 with secret header. Deploy and configure schedules.
+> Security/UX pass: verify no secrets in client bundle (`grep` dist for key fragments), DOMPurify coverage, empty/loading/error states on all pages, Lighthouse sanity. Write README: Supabase setup (SQL, bucket), BotFather walkthrough, Vercel env vars + deploy, cron-job.org schedule table from §6.2 with secret header. Deploy and configure schedules.
 > **Accept when:** production URL requires login, cron-job.org runs appear in ingest history, Telegram fires from production, edge cases #10/#12/#19 manually verified.
 
 ---
