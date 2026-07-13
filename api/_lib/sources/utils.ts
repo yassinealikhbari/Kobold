@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 
-import type { RawJob } from './types';
+import type { RawJob } from './types.js';
 
 const parser = new XMLParser({
   ignoreAttributes: false,

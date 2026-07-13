@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { requireAuth, sendError } from '../_lib/auth';
-import { getSupabase } from '../_lib/db';
-import { getJobById } from '../_lib/jobs';
+import { requireAuth, sendError } from '../_lib/auth.js';
+import { getSupabase } from '../_lib/db.js';
+import { getJobById } from '../_lib/jobs.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

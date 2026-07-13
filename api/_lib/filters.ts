@@ -1,4 +1,4 @@
-import type { RawJob } from './sources/types';
+import type { RawJob } from './sources/types.js';
 
 export const VUE_RE = /\b(vue(\.js|js)?|nuxt(\.js|js)?)\b/i;
 

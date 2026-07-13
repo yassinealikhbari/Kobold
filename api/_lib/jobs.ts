@@ -1,4 +1,4 @@
-import { getSupabase } from './db';
+import { getSupabase } from './db.js';
 
 export type JobStatus = 'active' | 'stale' | 'expired' | 'dismissed';
 

@@ -1,7 +1,7 @@
-import { VUE_RE } from '../filters';
-import { fetchJson } from './http';
-import type { RawJob, SourceAdapter } from './types';
-import { truncateRawJob, unixSecondsToIso, validRawJob } from './utils';
+import { VUE_RE } from '../filters.js';
+import { fetchJson } from './http.js';
+import type { RawJob, SourceAdapter } from './types.js';
+import { truncateRawJob, unixSecondsToIso, validRawJob } from './utils.js';
 
 type ArbeitnowResponse = {
   data?: ArbeitnowJob[];

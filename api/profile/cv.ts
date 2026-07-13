@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 import formidable from 'formidable';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { HttpError, requireAuth, sendError } from '../_lib/auth';
-import { getSupabase } from '../_lib/db';
-import { getOrCreateProfile } from '../_lib/profile';
+import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
+import { getSupabase } from '../_lib/db.js';
+import { getOrCreateProfile } from '../_lib/profile.js';
 
 export const config = {
   api: {

@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { HttpError, requireAuth, sendError } from './_lib/auth';
-import { getOrCreateApplication, updateApplication } from './_lib/applications';
-import { getJobById } from './_lib/jobs';
-import { getOrCreateProfile } from './_lib/profile';
+import { HttpError, requireAuth, sendError } from './_lib/auth.js';
+import { getOrCreateApplication, updateApplication } from './_lib/applications.js';
+import { getJobById } from './_lib/jobs.js';
+import { getOrCreateProfile } from './_lib/profile.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

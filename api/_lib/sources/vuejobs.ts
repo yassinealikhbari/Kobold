@@ -1,6 +1,6 @@
-import { fetchText } from './http';
-import type { RawJob, SourceAdapter } from './types';
-import { dateToIso, getText, parseRssItems, splitRoleAtCompany, validRawJob } from './utils';
+import { fetchText } from './http.js';
+import type { RawJob, SourceAdapter } from './types.js';
+import { dateToIso, getText, parseRssItems, splitRoleAtCompany, validRawJob } from './utils.js';
 
 const FEEDS = ['https://vuejobs.com/feed', 'https://app.vuejobs.com/feed/posts'];
 

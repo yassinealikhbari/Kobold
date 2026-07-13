@@ -1,11 +1,11 @@
-import { arbeitnowAdapter } from './arbeitnow';
-import { berlinStartupJobsAdapter } from './berlinstartupjobs';
-import { germanTechJobsAdapter } from './germantechjobs';
-import { remoteOkAdapter } from './remoteok';
-import { stepStoneAdapter } from './stepstone';
-import type { SourceAdapter } from './types';
-import { vuejobsAdapter } from './vuejobs';
-import { workingNomadsAdapter } from './workingnomads';
+import { arbeitnowAdapter } from './arbeitnow.js';
+import { berlinStartupJobsAdapter } from './berlinstartupjobs.js';
+import { germanTechJobsAdapter } from './germantechjobs.js';
+import { remoteOkAdapter } from './remoteok.js';
+import { stepStoneAdapter } from './stepstone.js';
+import type { SourceAdapter } from './types.js';
+import { vuejobsAdapter } from './vuejobs.js';
+import { workingNomadsAdapter } from './workingnomads.js';
 
 export const sourceAdapters = [
   arbeitnowAdapter,

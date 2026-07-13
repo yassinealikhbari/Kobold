@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { requireAuth, sendError } from '../_lib/auth';
-import { updateApplication, type ApplicationStatus } from '../_lib/applications';
-import { getSupabase } from '../_lib/db';
+import { requireAuth, sendError } from '../_lib/auth.js';
+import { updateApplication, type ApplicationStatus } from '../_lib/applications.js';
+import { getSupabase } from '../_lib/db.js';
 
 const STATUSES = new Set(['saved', 'applied', 'interviewing', 'offer', 'rejected']);
 

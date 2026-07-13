@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { requireAuth, sendError } from '../_lib/auth';
-import { getSupabase } from '../_lib/db';
-import { serializeJob, type JobStatus } from '../_lib/jobs';
+import { requireAuth, sendError } from '../_lib/auth.js';
+import { getSupabase } from '../_lib/db.js';
+import { serializeJob, type JobStatus } from '../_lib/jobs.js';
 
 const PAGE_SIZE = 50;
 const SORTS = new Set(['score', 'posted']);

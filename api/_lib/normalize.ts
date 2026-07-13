@@ -5,8 +5,8 @@ import {
   isGermanRequired,
   isVueRelevant,
   scoreJob,
-} from './filters';
-import type { RawJob } from './sources/types';
+} from './filters.js';
+import type { RawJob } from './sources/types.js';
 
 const LEGAL_SUFFIX_RE = /\b(gmbh|se|ag|inc|ltd|co\.?\s?kg)\b/gi;
 const GENDER_SUFFIX_RE = /\((m|f|w|d|x|h)[/|,\s]*.*?\)/gi;

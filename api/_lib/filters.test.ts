@@ -7,8 +7,8 @@ import {
   isGermanRequired,
   isVueRelevant,
   scoreJob,
-} from './filters';
-import { buildDedupeKey, extractApplyTarget, normalizeRawJob, normalizedTitleForDedupe, stripHtml } from './normalize';
+} from './filters.js';
+import { buildDedupeKey, extractApplyTarget, normalizeRawJob, normalizedTitleForDedupe, stripHtml } from './normalize.js';
 
 describe('Vue relevance', () => {
   it('keeps strong title and tag matches', () => {

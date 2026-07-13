@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { requireAuth, sendError } from '../_lib/auth';
-import { getSupabase } from '../_lib/db';
-import { getOrCreateProfile, normalizeProfile, profileUpdatePayload } from '../_lib/profile';
+import { requireAuth, sendError } from '../_lib/auth.js';
+import { getSupabase } from '../_lib/db.js';
+import { getOrCreateProfile, normalizeProfile, profileUpdatePayload } from '../_lib/profile.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

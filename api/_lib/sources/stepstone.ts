@@ -1,6 +1,6 @@
-import { fetchText } from './http';
-import type { RawJob, SourceAdapter } from './types';
-import { absoluteUrl, dateToIso, getText, parseJsonLd, validRawJob } from './utils';
+import { fetchText } from './http.js';
+import type { RawJob, SourceAdapter } from './types.js';
+import { absoluteUrl, dateToIso, getText, parseJsonLd, validRawJob } from './utils.js';
 
 const STEPSTONE_URLS = [
   'https://www.stepstone.de/jobs/vue.js/in-berlin?radius=30&action=facet_selected',

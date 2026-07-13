@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { constantTimeEqual, requireAuth, sendError } from './_lib/auth';
-import { getSupabase } from './_lib/db';
-import { normalizeRawJob, type NormalizedJob } from './_lib/normalize';
-import { getSourceAdapter } from './_lib/sources';
-import type { RawJob } from './_lib/sources/types';
-import { sendJobNotifications, type TelegramJob } from './_lib/telegram';
+import { constantTimeEqual, requireAuth, sendError } from './_lib/auth.js';
+import { getSupabase } from './_lib/db.js';
+import { normalizeRawJob, type NormalizedJob } from './_lib/normalize.js';
+import { getSourceAdapter } from './_lib/sources/index.js';
+import type { RawJob } from './_lib/sources/types.js';
+import { sendJobNotifications, type TelegramJob } from './_lib/telegram.js';
 
 type JobRow = {
   id: string;

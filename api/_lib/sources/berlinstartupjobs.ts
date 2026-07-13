@@ -1,6 +1,6 @@
-import { fetchText } from './http';
-import type { RawJob, SourceAdapter } from './types';
-import { bestEffortBerlinStartupTitle, dateToIso, getText, parseRssItems, validRawJob } from './utils';
+import { fetchText } from './http.js';
+import type { RawJob, SourceAdapter } from './types.js';
+import { bestEffortBerlinStartupTitle, dateToIso, getText, parseRssItems, validRawJob } from './utils.js';
 
 export const berlinStartupJobsAdapter: SourceAdapter = {
   name: 'berlinstartupjobs',

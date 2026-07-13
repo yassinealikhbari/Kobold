@@ -1,6 +1,6 @@
-import { fetchText } from './http';
-import type { RawJob, SourceAdapter } from './types';
-import { arrayify, dateToIso, getArrayText, getText, parseJsonLd, validRawJob } from './utils';
+import { fetchText } from './http.js';
+import type { RawJob, SourceAdapter } from './types.js';
+import { arrayify, dateToIso, getArrayText, getText, parseJsonLd, validRawJob } from './utils.js';
 
 const URLS = ['https://germantechjobs.de/jobs/Vue/Berlin', 'https://germantechjobs.de/jobs/Vue/Remote'];
 
