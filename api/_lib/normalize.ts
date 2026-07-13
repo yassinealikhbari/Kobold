@@ -4,7 +4,7 @@ import {
   evaluateSeniority,
   isGermanRequired,
   isVueRelevant,
-  scoreJob,
+  scoreJobDetails,
 } from './filters.js';
 import type { RawJob } from './sources/types.js';
 
@@ -36,6 +36,7 @@ export type NormalizedJob = {
   germanRequired: boolean;
   salaryText?: string;
   score: number;
+  scoreReasons: string[];
   postedAt?: string;
   dedupeKey: string;
   status: 'active' | 'dismissed';
@@ -63,6 +64,15 @@ export function normalizeRawJob(raw: RawJob): NormalizeResult {
   const extracted = extractApplyTarget(descriptionHtml);
   const applyUrl = raw.applyUrl ?? extracted.applyUrl;
   const ats = extracted.ats;
+  const score = scoreJobDetails({
+    title,
+    tags,
+    location: raw.location,
+    descriptionText,
+    seniority: seniority.seniority,
+    salaryText: raw.salaryText,
+    locationScoreAdjustment: location.scoreAdjustment,
+  });
   const baseJob = {
     title,
     company,
@@ -79,15 +89,8 @@ export function normalizeRawJob(raw: RawJob): NormalizeResult {
     salaryText: raw.salaryText,
     postedAt: raw.postedAt,
     dedupeKey: buildDedupeKey(company, title, url),
-    score: scoreJob({
-      title,
-      tags,
-      location: raw.location,
-      descriptionText,
-      seniority: seniority.seniority,
-      salaryText: raw.salaryText,
-      locationScoreAdjustment: location.scoreAdjustment,
-    }),
+    score: score.score,
+    scoreReasons: score.reasons,
     status: germanRequired ? 'dismissed' : 'active',
   } satisfies NormalizedJob;
 

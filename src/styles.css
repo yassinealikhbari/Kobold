@@ -232,6 +232,23 @@ form.panel {
   align-items: end;
 }
 
+.board-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .inline-field,
 .check-field {
   display: flex;
@@ -305,6 +322,12 @@ form.panel {
 .job-company {
   margin: 4px 0 0;
   color: #cbd5e1;
+}
+
+.score-reasons {
+  margin: -4px 0 0;
+  color: #a5b4fc;
+  font-size: 13px;
 }
 
 .score-pill,

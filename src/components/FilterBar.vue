@@ -35,8 +35,12 @@ const emit = defineEmits<{
     </select>
 
     <label class="inline-field">
-      <span>Min score</span>
-      <input v-model.number="filters.minScore" type="number" min="-3" max="12" @input="emit('change')" />
+      <span>Match level</span>
+      <select v-model.number="filters.minScore" @change="emit('change')">
+        <option :value="6">Best matches</option>
+        <option :value="3">Good matches</option>
+        <option :value="-3">All eligible</option>
+      </select>
     </label>
 
     <select v-model="filters.sort" aria-label="Sort" @change="emit('change')">

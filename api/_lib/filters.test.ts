@@ -7,6 +7,7 @@ import {
   isGermanRequired,
   isVueRelevant,
   scoreJob,
+  scoreJobDetails,
 } from './filters.js';
 import { buildDedupeKey, extractApplyTarget, normalizeRawJob, normalizedTitleForDedupe, stripHtml } from './normalize.js';
 
@@ -132,6 +133,21 @@ describe('Scoring', () => {
         locationScoreAdjustment: -5,
       }),
     ).toBe(-3);
+  });
+
+  it('returns score evidence for the board', () => {
+    expect(
+      scoreJobDetails({
+        title: 'Vue Engineer',
+        tags: ['TypeScript'],
+        location: 'Berlin',
+        descriptionText: 'Build with Nuxt.',
+        seniority: 'mid',
+      }),
+    ).toMatchObject({
+      score: 8,
+      reasons: ['Vue or Nuxt in title', 'Berlin location', 'TypeScript', 'Nuxt', 'Mid-level scope'],
+    });
   });
 });
 

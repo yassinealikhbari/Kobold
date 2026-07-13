@@ -95,6 +95,8 @@ surface the next useful action for every application.
 
 ## Phase 2: Make The Board Trustworthy And Fast To Triage
 
+**Status:** Complete in `feat: improve board triage and ranking transparency`.
+
 ### Scope
 
 1. Replace the current implicit 50-job cap with cursor pagination or an explicit

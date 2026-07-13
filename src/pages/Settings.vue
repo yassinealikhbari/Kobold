@@ -74,7 +74,9 @@ onMounted(() => {
               <th>Started</th>
               <th>Found</th>
               <th>Matched</th>
-              <th>Inserted</th>
+              <th>Active</th>
+              <th>Dismissed</th>
+              <th>Updated</th>
               <th>Error</th>
             </tr>
           </thead>
@@ -84,7 +86,9 @@ onMounted(() => {
               <td>{{ absoluteDate(run.started_at) }}</td>
               <td>{{ run.found }}</td>
               <td>{{ run.matched }}</td>
-              <td>{{ run.inserted }}</td>
+              <td>{{ run.inserted_active ?? run.inserted }}</td>
+              <td>{{ run.inserted_dismissed ?? 0 }}</td>
+              <td>{{ run.updated ?? 0 }}</td>
               <td>{{ run.error || '' }}</td>
             </tr>
           </tbody>

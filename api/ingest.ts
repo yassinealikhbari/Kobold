@@ -28,6 +28,7 @@ type JobRow = {
   german_required: boolean;
   salary_text: string | null;
   score: number;
+  score_reasons: string[];
   posted_at: string | null;
   status: 'active' | 'stale' | 'expired' | 'dismissed';
 };
@@ -45,7 +46,14 @@ type IngestRun = {
   duration_ms: number | null;
 };
 
-type IngestStats = { found: number; matched: number; inserted: number };
+type IngestStats = {
+  found: number;
+  matched: number;
+  inserted: number;
+  insertedActive: number;
+  insertedDismissed: number;
+  updated: number;
+};
 
 const ACTIVE_STATUSES = ['active', 'stale'] as const;
 
@@ -59,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   let run: IngestRun | null = null;
-  let stats: IngestStats = { found: 0, matched: 0, inserted: 0 };
+  let stats: IngestStats = emptyStats();
   const startedAt = Date.now();
 
   try {
@@ -79,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     run = await createRun(source);
 
     if (source === 'lifecycle') {
-      const finalized = await completeRun(run, await runLifecyclePass(), 'success', null, startedAt);
+      const finalized = await completeRun(run, toIngestStats(await runLifecyclePass()), 'success', null, startedAt);
       res.status(200).json({ run: finalized });
       return;
     }
@@ -103,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       adapterError = error instanceof Error ? error.message : String(error);
     }
 
-    stats = { found: rawJobs.length, matched: 0, inserted: 0 };
+    stats = { ...emptyStats(), found: rawJobs.length };
     await ensureSettingsRow();
     const settings = await getSettings();
     const notifyJobs: TelegramJob[] = [];
@@ -119,8 +127,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (result.keep) stats.matched += 1;
     }
 
-    const insertedJobs = await upsertJobs(jobsToStore, source);
-    stats.inserted = insertedJobs.length;
+    const upserted = await upsertJobs(jobsToStore, source);
+    const insertedJobs = upserted.insertedJobs;
+    stats.insertedActive = upserted.insertedActive;
+    stats.insertedDismissed = upserted.insertedDismissed;
+    stats.updated = upserted.updated;
+    stats.inserted = upserted.insertedActive;
     if (settings.notify_enabled) {
       for (const inserted of insertedJobs) {
         if (inserted.status !== 'active' || inserted.score < settings.min_score_notify) continue;
@@ -221,6 +233,9 @@ async function completeRun(
       found: stats.found,
       matched: stats.matched,
       inserted: stats.inserted,
+      inserted_active: stats.insertedActive,
+      inserted_dismissed: stats.insertedDismissed,
+      updated: stats.updated,
       error: errorMessage,
       outcome,
       duration_ms: durationMs,
@@ -282,9 +297,14 @@ async function updateSourceHealth(input: {
   if (error) throw error;
 }
 
-async function upsertJobs(jobs: NormalizedJob[], source: string): Promise<JobRow[]> {
+async function upsertJobs(
+  jobs: NormalizedJob[],
+  source: string,
+): Promise<{ insertedJobs: JobRow[]; insertedActive: number; insertedDismissed: number; updated: number }> {
   const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.dedupeKey, job])).values());
-  if (uniqueJobs.length === 0) return [];
+  if (uniqueJobs.length === 0) {
+    return { insertedJobs: [], insertedActive: 0, insertedDismissed: 0, updated: 0 };
+  }
 
   const existingByKey = await findJobs(uniqueJobs.map((job) => job.dedupeKey));
   const now = new Date().toISOString();
@@ -300,7 +320,13 @@ async function upsertJobs(jobs: NormalizedJob[], source: string): Promise<JobRow
 
   if (error) throw error;
 
-  return (data ?? []).filter((row) => !existingByKey.has((row as JobRow).dedupe_key)) as JobRow[];
+  const insertedJobs = (data ?? []).filter((row) => !existingByKey.has((row as JobRow).dedupe_key)) as JobRow[];
+  return {
+    insertedJobs,
+    insertedActive: insertedJobs.filter((job) => job.status === 'active').length,
+    insertedDismissed: insertedJobs.filter((job) => job.status === 'dismissed').length,
+    updated: uniqueJobs.length - insertedJobs.length,
+  };
 }
 
 async function findJobs(dedupeKeys: string[]): Promise<Map<string, JobRow>> {
@@ -338,6 +364,7 @@ function toInsertRow(job: NormalizedJob, source: string, now: string): Record<st
     german_required: job.germanRequired,
     salary_text: job.salaryText ?? null,
     score: job.score,
+    score_reasons: job.scoreReasons,
     posted_at: job.postedAt ?? null,
     first_seen_at: now,
     last_seen_at: now,
@@ -364,6 +391,7 @@ function toUpdateRow(existing: JobRow, job: NormalizedJob, source: string, now: 
     german_required: existing.german_required || job.germanRequired,
     salary_text: existing.salary_text ?? job.salaryText ?? null,
     score: Math.max(existing.score, job.score),
+    score_reasons: Array.from(new Set([...(existing.score_reasons ?? []), ...job.scoreReasons])),
     posted_at: existing.posted_at ?? job.postedAt ?? null,
     last_seen_at: now,
     status,
@@ -412,6 +440,14 @@ async function runLifecyclePass(): Promise<{ found: number; matched: number; ins
   }
 
   return { found: data?.length ?? 0, matched: updated, inserted: 0 };
+}
+
+function emptyStats(): IngestStats {
+  return { found: 0, matched: 0, inserted: 0, insertedActive: 0, insertedDismissed: 0, updated: 0 };
+}
+
+function toIngestStats(stats: { found: number; matched: number; inserted: number }): IngestStats {
+  return { ...emptyStats(), ...stats };
 }
 
 async function ensureSettingsRow(): Promise<void> {

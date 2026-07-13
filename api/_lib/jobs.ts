@@ -19,6 +19,7 @@ export type JobResponse = {
   german_required: boolean;
   salary_text: string | null;
   score: number;
+  score_reasons: string[];
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;

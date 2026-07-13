@@ -15,7 +15,12 @@ export type JobFilters = {
 type JobsResponse = {
   jobs: Job[];
   total: number;
+  page: number;
+  hasMore: boolean;
 };
+
+let activeJobsRequest: AbortController | null = null;
+let jobsRequestSequence = 0;
 
 export const SOURCES = [
   'arbeitnow',
@@ -32,6 +37,8 @@ export const useJobsStore = defineStore('jobs', {
     selectedJob: null as Job | null,
     syncRuns: [] as IngestRun[],
     total: 0,
+    page: 0,
+    hasMore: false,
     loading: false,
     refreshing: false,
     error: null as string | null,
@@ -40,13 +47,19 @@ export const useJobsStore = defineStore('jobs', {
       q: '',
       workplace: '',
       source: '',
-      minScore: 0,
+      minScore: 3,
       showStale: false,
       sort: 'score',
     } as JobFilters,
   }),
   actions: {
-    async fetchJobs() {
+    async fetchJobs(options: { append?: boolean } = {}) {
+      const append = options.append ?? false;
+      const nextPage = append ? this.page + 1 : 1;
+      activeJobsRequest?.abort();
+      const controller = new AbortController();
+      activeJobsRequest = controller;
+      const requestSequence = ++jobsRequestSequence;
       this.loading = true;
       this.error = null;
 
@@ -55,19 +68,24 @@ export const useJobsStore = defineStore('jobs', {
           status: this.filters.showStale ? 'active,stale' : 'active',
           sort: this.filters.sort,
           minScore: String(this.filters.minScore),
+          page: String(nextPage),
         });
 
         if (this.filters.q) params.set('q', this.filters.q);
         if (this.filters.workplace) params.set('workplace', this.filters.workplace);
         if (this.filters.source) params.set('source', this.filters.source);
 
-        const response = await apiFetch<JobsResponse>(`/jobs?${params.toString()}`);
-        this.jobs = response.jobs;
+        const response = await apiFetch<JobsResponse>(`/jobs?${params.toString()}`, { signal: controller.signal });
+        if (requestSequence !== jobsRequestSequence) return;
+        this.jobs = append ? [...this.jobs, ...response.jobs] : response.jobs;
         this.total = response.total;
+        this.page = response.page;
+        this.hasMore = response.hasMore;
       } catch (error) {
+        if (controller.signal.aborted) return;
         this.error = error instanceof Error ? error.message : 'Failed to load jobs';
       } finally {
-        this.loading = false;
+        if (requestSequence === jobsRequestSequence) this.loading = false;
       }
     },
     async fetchJob(id: string) {

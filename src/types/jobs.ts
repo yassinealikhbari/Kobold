@@ -17,6 +17,7 @@ export type Job = {
   german_required: boolean;
   salary_text: string | null;
   score: number;
+  score_reasons: string[];
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;
@@ -35,6 +36,9 @@ export type IngestRun = {
   found: number;
   matched: number;
   inserted: number;
+  inserted_active?: number;
+  inserted_dismissed?: number;
+  updated?: number;
   error: string | null;
   outcome?: 'success' | 'empty' | 'partial' | 'failed';
   duration_ms?: number | null;

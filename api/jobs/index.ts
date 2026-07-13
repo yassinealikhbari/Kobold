@@ -63,6 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({
       jobs: (data ?? []).map((row) => serializeJob(row as Parameters<typeof serializeJob>[0])),
       total: count ?? 0,
+      page,
+      pageSize: PAGE_SIZE,
+      hasMore: to + 1 < (count ?? 0),
     });
   } catch (error) {
     sendError(res, error, { route: '/api/jobs', method: req.method });

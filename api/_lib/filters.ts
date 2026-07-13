@@ -22,6 +22,11 @@ const LONG_EXPERIENCE_RE = /\b([7-9]|1[0-9])\+?\s*years?/i;
 export type Workplace = 'remote' | 'hybrid' | 'onsite' | 'unknown';
 export type Seniority = 'mid' | 'senior' | 'mixed' | 'unknown';
 
+export type ScoreResult = {
+  score: number;
+  reasons: string[];
+};
+
 export type FilterDecision = {
   keep: boolean;
   reason?: string;
@@ -132,24 +137,65 @@ export function scoreJob(input: {
   salaryText?: string;
   locationScoreAdjustment?: number;
 }): number {
+  return scoreJobDetails(input).score;
+}
+
+export function scoreJobDetails(input: {
+  title: string;
+  tags?: string[];
+  location?: string;
+  descriptionText?: string;
+  seniority: Seniority;
+  salaryText?: string;
+  locationScoreAdjustment?: number;
+}): ScoreResult {
   const tags = input.tags ?? [];
   const tagText = tags.join(' ');
   const description = input.descriptionText ?? '';
   const location = input.location ?? '';
+  const reasons: string[] = [];
   let score = 0;
 
-  if (VUE_RE.test(input.title)) score += 3;
-  if (VUE_RE.test(tagText)) score += 2;
-  if (/berlin/i.test(location)) score += 2;
-  if (REMOTE_RE.test(`${location} ${tagText}`) && EUROPE_RE.test(`${location} ${description} ${tagText}`)) score += 2;
-  if (/typescript/i.test(`${input.title} ${tagText} ${description}`)) score += 1;
-  if (/\bnuxt(\.js|js)?\b/i.test(`${input.title} ${tagText} ${description}`)) score += 1;
-  if (input.seniority === 'mid' || input.seniority === 'mixed') score += 1;
-  if (input.salaryText) score += 1;
+  if (VUE_RE.test(input.title)) {
+    score += 3;
+    reasons.push('Vue or Nuxt in title');
+  }
+  if (VUE_RE.test(tagText)) {
+    score += 2;
+    reasons.push('Vue or Nuxt tag');
+  }
+  if (/berlin/i.test(location)) {
+    score += 2;
+    reasons.push('Berlin location');
+  }
+  if (REMOTE_RE.test(`${location} ${tagText}`) && EUROPE_RE.test(`${location} ${description} ${tagText}`)) {
+    score += 2;
+    reasons.push('Remote Europe');
+  }
+  if (/typescript/i.test(`${input.title} ${tagText} ${description}`)) {
+    score += 1;
+    reasons.push('TypeScript');
+  }
+  if (/\bnuxt(\.js|js)?\b/i.test(`${input.title} ${tagText} ${description}`)) {
+    score += 1;
+    reasons.push('Nuxt');
+  }
+  if (input.seniority === 'mid' || input.seniority === 'mixed') {
+    score += 1;
+    reasons.push('Mid-level scope');
+  }
+  if (input.salaryText) {
+    score += 1;
+    reasons.push('Salary listed');
+  }
+  if ((input.locationScoreAdjustment ?? 0) < 0) reasons.push('Location needs verification');
   score += input.locationScoreAdjustment ?? 0;
-  if (LONG_EXPERIENCE_RE.test(description)) score -= 2;
+  if (LONG_EXPERIENCE_RE.test(description)) {
+    score -= 2;
+    reasons.push('7+ years requested');
+  }
 
-  return Math.max(-3, Math.min(12, score));
+  return { score: Math.max(-3, Math.min(12, score)), reasons };
 }
 
 function countOccurrences(value: string, search: string): number {
