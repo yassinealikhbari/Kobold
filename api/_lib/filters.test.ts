@@ -149,6 +149,19 @@ describe('Scoring', () => {
       reasons: ['Vue or Nuxt in title', 'Berlin location', 'TypeScript', 'Nuxt', 'Mid-level scope'],
     });
   });
+
+  it('rewards Vue in the description and frontend roles in the title', () => {
+    expect(
+      scoreJobDetails({
+        title: 'Frontend Engineer',
+        descriptionText: 'You will build customer-facing Vue applications.',
+        seniority: 'unknown',
+      }),
+    ).toMatchObject({
+      score: 2,
+      reasons: ['Vue in description', 'Frontend role'],
+    });
+  });
 });
 
 describe('Dedupe and normalization', () => {

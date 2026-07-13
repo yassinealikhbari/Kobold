@@ -3,6 +3,8 @@ import type { RawJob } from './sources/types.js';
 export const VUE_RE = /\b(vue(\.js|js)?|nuxt(\.js|js)?)\b/i;
 
 const FRONTEND_TITLE_RE = /(front.?end|full.?stack|web|software|javascript|typescript)/i;
+const VUE_DESCRIPTION_RE = /\bvue(\.js|js)?\b/i;
+const FRONTEND_ROLE_TITLE_RE = /front.?end/i;
 const REMOTE_RE = /remote/i;
 const EUROPE_RE = /(europe|emea|eu\b|cet|european|worldwide|anywhere|germany|deutschland)/i;
 const NON_EU_REMOTE_RE = /(united states|usa|us only|canada|latam|americas|apac|asia|australia|india|africa)/i;
@@ -163,6 +165,14 @@ export function scoreJobDetails(input: {
   if (VUE_RE.test(tagText)) {
     score += 2;
     reasons.push('Vue or Nuxt tag');
+  }
+  if (VUE_DESCRIPTION_RE.test(description)) {
+    score += 1;
+    reasons.push('Vue in description');
+  }
+  if (FRONTEND_ROLE_TITLE_RE.test(input.title)) {
+    score += 1;
+    reasons.push('Frontend role');
   }
   if (/berlin/i.test(location)) {
     score += 2;
