@@ -93,33 +93,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const settings = await getSettings();
     const notifyJobs: TelegramJob[] = [];
 
+    const jobsToStore: NormalizedJob[] = [];
+
     for (const rawJob of rawJobs) {
       const result = normalizeRawJob(rawJob);
       if (!result.keep && !result.job) continue;
 
-      if (result.job) {
-        const inserted = await upsertJob(result.job, source);
-        if (inserted) {
-          stats.inserted += 1;
-          if (
-            settings.notify_enabled &&
-            inserted.status === 'active' &&
-            inserted.score >= settings.min_score_notify
-          ) {
-            notifyJobs.push({
-              id: inserted.id,
-              title: inserted.title,
-              company: inserted.company,
-              location: inserted.location,
-              workplace: inserted.workplace,
-              score: inserted.score,
-              source,
-            });
-          }
-        }
-      }
+      if (result.job) jobsToStore.push(result.job);
 
       if (result.keep) stats.matched += 1;
+    }
+
+    const insertedJobs = await upsertJobs(jobsToStore, source);
+    stats.inserted = insertedJobs.length;
+    if (settings.notify_enabled) {
+      for (const inserted of insertedJobs) {
+        if (inserted.status !== 'active' || inserted.score < settings.min_score_notify) continue;
+        notifyJobs.push({
+          id: inserted.id,
+          title: inserted.title,
+          company: inserted.company,
+          location: inserted.location,
+          workplace: inserted.workplace,
+          score: inserted.score,
+          source,
+        });
+      }
     }
 
     const telegramError = await sendJobNotifications(notifyJobs);
@@ -186,34 +185,42 @@ async function finalizeRun(
   return data as IngestRun;
 }
 
-async function upsertJob(job: NormalizedJob, source: string): Promise<JobRow | null> {
-  const existing = await findJob(job.dedupeKey);
+async function upsertJobs(jobs: NormalizedJob[], source: string): Promise<JobRow[]> {
+  const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.dedupeKey, job])).values());
+  if (uniqueJobs.length === 0) return [];
+
+  const existingByKey = await findJobs(uniqueJobs.map((job) => job.dedupeKey));
   const now = new Date().toISOString();
+  const rows = uniqueJobs.map((job) => {
+    const existing = existingByKey.get(job.dedupeKey);
+    return existing ? toUpdateRow(existing, job, source, now) : toInsertRow(job, source, now);
+  });
 
-  if (!existing) {
-    const { data, error } = await getSupabase().from('jobs').insert(toInsertRow(job, source, now)).select('*').single();
-    if (error) throw error;
-    return data as JobRow;
-  }
-
-  const { error } = await getSupabase()
-    .from('jobs')
-    .update(toUpdateRow(existing, job, source, now))
-    .eq('id', existing.id);
-
-  if (error) throw error;
-  return null;
-}
-
-async function findJob(dedupeKey: string): Promise<JobRow | null> {
   const { data, error } = await getSupabase()
     .from('jobs')
-    .select('*')
-    .eq('dedupe_key', dedupeKey)
-    .maybeSingle();
+    .upsert(rows, { onConflict: 'dedupe_key' })
+    .select('*');
 
   if (error) throw error;
-  return data as JobRow | null;
+
+  return (data ?? []).filter((row) => !existingByKey.has((row as JobRow).dedupe_key)) as JobRow[];
+}
+
+async function findJobs(dedupeKeys: string[]): Promise<Map<string, JobRow>> {
+  const jobs = new Map<string, JobRow>();
+
+  for (let index = 0; index < dedupeKeys.length; index += 200) {
+    const keys = dedupeKeys.slice(index, index + 200);
+    const { data, error } = await getSupabase().from('jobs').select('*').in('dedupe_key', keys);
+    if (error) throw error;
+
+    for (const job of data ?? []) {
+      const row = job as JobRow;
+      jobs.set(row.dedupe_key, row);
+    }
+  }
+
+  return jobs;
 }
 
 function toInsertRow(job: NormalizedJob, source: string, now: string): Record<string, unknown> {

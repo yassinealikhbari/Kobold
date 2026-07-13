@@ -37,7 +37,7 @@ function drop(status: ApplicationStatus) {
 }
 
 function daysInColumn(application: TrackedApplication): number {
-  const start = application.status === 'applied' && application.applied_at ? application.applied_at : application.updated_at;
+  const start = application.status_changed_at ?? application.updated_at;
   return Math.max(0, Math.floor((Date.now() - new Date(start).getTime()) / 86_400_000));
 }
 

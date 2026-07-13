@@ -45,9 +45,12 @@ function locationBadge(job: Job): string {
         {{ relativeDate(job.posted_at ?? job.first_seen_at) }}
       </span>
       <div class="action-row">
-        <button class="text-button" type="button" @click="emit('save', job.id)">Save</button>
+        <RouterLink v-if="job.application" class="text-button" to="/tracker">
+          {{ job.application.status === 'applied' ? 'Applied' : 'Saved' }}
+        </RouterLink>
+        <button v-else class="text-button" type="button" @click="emit('save', job.id)">Save</button>
         <button class="text-button" type="button" @click="emit('dismiss', job.id)">Dismiss</button>
-        <a class="text-button" :href="job.url" target="_blank" rel="noreferrer">Open listing</a>
+        <a class="text-button apply-link" :href="job.apply_url ?? job.url" target="_blank" rel="noreferrer">Apply</a>
       </div>
     </div>
   </article>

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { requireAuth, sendError } from '../_lib/auth.js';
-import { getOrCreateApplication } from '../_lib/applications.js';
+import { getApplicationByJob, getOrCreateApplication } from '../_lib/applications.js';
 import { getSupabase } from '../_lib/db.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,6 +9,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await requireAuth(req);
 
     if (req.method === 'GET') {
+      const jobId = typeof req.query.job_id === 'string' ? req.query.job_id : '';
+      if (jobId) {
+        res.status(200).json({ application: await getApplicationByJob(jobId) });
+        return;
+      }
+
       const { data, error } = await getSupabase()
         .from('applications')
         .select('*, jobs(id,title,company,url,status)')

@@ -270,6 +270,10 @@ form.panel {
   margin: 0;
 }
 
+.empty-action {
+  width: fit-content;
+}
+
 .result-count {
   color: #94a3b8;
   font-size: 14px;
@@ -339,6 +343,11 @@ form.panel {
   padding: 0;
   color: #93c5fd;
   background: transparent;
+}
+
+.apply-link {
+  color: #e0f2fe;
+  font-weight: 700;
 }
 
 .button-link {

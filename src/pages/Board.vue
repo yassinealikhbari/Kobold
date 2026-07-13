@@ -30,6 +30,16 @@ async function save(id: string) {
   await jobs.fetchJobs();
 }
 
+function clearFilters() {
+  jobs.filters.q = '';
+  jobs.filters.workplace = '';
+  jobs.filters.source = '';
+  jobs.filters.minScore = -3;
+  jobs.filters.showStale = false;
+  jobs.filters.sort = 'score';
+  void jobs.fetchJobs();
+}
+
 async function refresh() {
   const selectedSources = refreshSelection.value === 'all' ? SOURCES : [refreshSelection.value];
   await jobs.refreshSources(selectedSources);
@@ -72,6 +82,7 @@ onMounted(async () => {
         matched {{ jobs.syncRuns[0].matched }}, inserted {{ jobs.syncRuns[0].inserted }}.
       </p>
       <p v-if="jobs.syncRuns[0]?.error" class="form-error">{{ jobs.syncRuns[0].error }}</p>
+      <button type="button" class="empty-action" @click="clearFilters">Clear filters</button>
     </div>
     <div v-else class="job-list">
       <div class="result-count">{{ jobs.total }} matching jobs</div>

@@ -9,6 +9,7 @@ export type ApplicationRow = {
   cover_letter: string | null;
   notes: string | null;
   applied_at: string | null;
+  status_changed_at: string;
   created_at: string;
   updated_at: string;
 };
@@ -45,6 +46,7 @@ export async function updateApplication(id: string, patch: Partial<ApplicationRo
 
   if (patch.status) {
     payload.status = patch.status;
+    payload.status_changed_at = new Date().toISOString();
     if (patch.status === 'applied') payload.applied_at = patch.applied_at ?? new Date().toISOString();
   }
   if ('notes' in patch) payload.notes = patch.notes ?? null;

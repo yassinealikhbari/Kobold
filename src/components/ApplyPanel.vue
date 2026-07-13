@@ -21,6 +21,7 @@ const instructions = ref('');
 const generating = ref(false);
 const savingLetter = ref(false);
 const error = ref('');
+const markingApplied = ref(false);
 let saveTimer: number | undefined;
 
 const copyFields = computed(() => [
@@ -47,6 +48,12 @@ async function ensureApplication() {
   application.value = response.application;
   letter.value = response.application.cover_letter ?? '';
   return response.application;
+}
+
+async function fetchApplication() {
+  const response = await apiFetch<{ application: Application | null }>(`/applications?job_id=${encodeURIComponent(props.job.id)}`);
+  application.value = response.application;
+  letter.value = response.application?.cover_letter ?? '';
 }
 
 async function generateLetter() {
@@ -88,13 +95,22 @@ async function downloadCv() {
 }
 
 async function markApplied() {
-  const current = await ensureApplication();
-  const response = await apiFetch<{ application: Application }>(`/applications/${current.id}`, {
-    method: 'PATCH',
-    body: { status: 'applied', cover_letter: letter.value },
-  });
-  application.value = response.application;
-  emit('applied');
+  markingApplied.value = true;
+  error.value = '';
+
+  try {
+    const current = await ensureApplication();
+    const response = await apiFetch<{ application: Application }>(`/applications/${current.id}`, {
+      method: 'PATCH',
+      body: { status: 'applied', cover_letter: letter.value },
+    });
+    application.value = response.application;
+    emit('applied');
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Failed to update application';
+  } finally {
+    markingApplied.value = false;
+  }
 }
 
 watch(letter, () => {
@@ -107,7 +123,7 @@ watch(letter, () => {
 
 onMounted(async () => {
   await profile.fetchProfile();
-  await ensureApplication();
+  await fetchApplication();
 });
 </script>
 
@@ -153,6 +169,8 @@ onMounted(async () => {
 
     <p v-if="error" class="form-error">{{ error }}</p>
 
-    <button type="button" class="primary-action" @click="markApplied">Mark as applied</button>
+    <button type="button" class="primary-action" :disabled="markingApplied || application?.status === 'applied'" @click="markApplied">
+      {{ application?.status === 'applied' ? 'Marked as applied' : markingApplied ? 'Updating' : 'Mark as applied' }}
+    </button>
   </section>
 </template>

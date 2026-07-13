@@ -7,6 +7,7 @@ export type Application = {
   cover_letter: string | null;
   notes: string | null;
   applied_at: string | null;
+  status_changed_at: string;
   created_at: string;
   updated_at: string;
 };

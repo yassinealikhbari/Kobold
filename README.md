@@ -35,7 +35,7 @@ No variable should be prefixed with `VITE_`.
 ## Supabase Setup
 
 1. Create a Supabase project.
-2. Run `supabase/migrations/001_init.sql` in the SQL editor.
+2. Run each SQL file in `supabase/migrations/` in filename order in the SQL editor.
 3. Create a private Storage bucket named `documents`.
 4. Put `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel project environment variables.
 
