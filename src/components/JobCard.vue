@@ -3,6 +3,7 @@ import { RouterLink } from 'vue-router';
 
 import { absoluteDate, relativeDate } from '@/lib/dates';
 import type { Job } from '@/types/jobs';
+import TagChip from './TagChip.vue';
 
 defineProps<{
   job: Job;
@@ -34,10 +35,10 @@ function locationBadge(job: Job): string {
     </div>
 
     <div class="chip-row">
-      <span class="chip">{{ locationBadge(job) }}</span>
-      <span class="chip">{{ job.workplace }}</span>
-      <span v-if="job.status !== 'active'" class="chip warning">{{ job.status }}</span>
-      <span v-for="source in job.sources" :key="source" class="chip muted">{{ source }}</span>
+      <TagChip :label="locationBadge(job)" />
+      <TagChip :label="job.workplace" />
+      <TagChip v-if="job.status !== 'active'" :label="job.status" tone="warning" />
+      <TagChip v-for="source in job.sources" :key="source" :label="source" tone="muted" />
     </div>
 
     <p v-if="job.score_reasons?.length" class="score-reasons">

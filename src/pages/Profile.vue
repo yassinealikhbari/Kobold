@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
+import TagChip from '@/components/TagChip.vue';
 import { useProfileStore } from '@/stores/profile';
 
 const profile = useProfileStore();
@@ -104,9 +105,7 @@ onMounted(() => {
           <button type="button" @click="addSkill">Add</button>
         </div>
         <div class="chip-row">
-          <button v-for="(skill, index) in profile.profile.skills" :key="skill" class="chip removable" type="button" @click="removeSkill(index)">
-            {{ skill }}
-          </button>
+          <TagChip v-for="(skill, index) in profile.profile.skills" :key="skill" :label="skill" removable @remove="removeSkill(index)" />
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import FilterBar from '@/components/FilterBar.vue';
 import JobCard from '@/components/JobCard.vue';
 import SyncStatus from '@/components/SyncStatus.vue';
+import TagChip from '@/components/TagChip.vue';
 import { apiFetch } from '@/lib/api';
 import { SOURCES, useJobsStore } from '@/stores/jobs';
 
@@ -102,7 +103,7 @@ onMounted(async () => {
         <button type="button" class="text-button" @click="clearFilters">Clear filters</button>
       </div>
       <div v-if="activeFilters.length" class="active-filters" aria-label="Active filters">
-        <span v-for="filter in activeFilters" :key="filter" class="chip muted">{{ filter }}</span>
+        <TagChip v-for="filter in activeFilters" :key="filter" :label="filter" tone="muted" />
       </div>
     </div>
 
