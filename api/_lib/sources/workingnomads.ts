@@ -19,7 +19,7 @@ export const workingNomadsAdapter: SourceAdapter = {
   async fetchJobs() {
     const response = await fetchJson<WorkingNomadsJob[]>('https://www.workingnomads.com/api/exposed_jobs/');
 
-    return response
+    return { jobs: response
       .filter((item) => VUE_RE.test(`${item.title ?? ''} ${getArrayText(item.tags).join(' ')}`))
       .map((item): RawJob | null => {
         const tags = getArrayText(item.tags);
@@ -35,6 +35,6 @@ export const workingNomadsAdapter: SourceAdapter = {
           postedAt: dateToIso(item.pub_date),
         });
       })
-      .filter(Boolean) as RawJob[];
+      .filter(Boolean) as RawJob[] };
   },
 };

@@ -8,13 +8,17 @@ export type TelegramJob = {
   source: string;
 };
 
+export function isTelegramConfigured(): boolean {
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID && process.env.APP_URL);
+}
+
 export async function sendJobNotifications(jobs: TelegramJob[]): Promise<string | null> {
   if (jobs.length === 0) return null;
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const appUrl = process.env.APP_URL;
-  if (!token || !chatId || !appUrl) return 'Telegram env vars are not configured';
+  if (!token || !chatId || !appUrl) return null;
 
   const messages = jobs.length <= 3 ? jobs.map((job) => formatJob(job, appUrl)) : [formatDigest(jobs, appUrl)];
 

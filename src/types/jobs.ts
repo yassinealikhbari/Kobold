@@ -36,4 +36,20 @@ export type IngestRun = {
   matched: number;
   inserted: number;
   error: string | null;
+  outcome?: 'success' | 'empty' | 'partial' | 'failed';
+  duration_ms?: number | null;
+};
+
+export type SourceHealth = {
+  source: string;
+  last_run_at: string;
+  last_success_at: string | null;
+  last_nonempty_at: string | null;
+  last_outcome: 'success' | 'empty' | 'partial' | 'failed';
+  last_found: number;
+  last_matched: number;
+  last_inserted: number;
+  last_duration_ms: number | null;
+  last_error: string | null;
+  consecutive_failures: number;
 };

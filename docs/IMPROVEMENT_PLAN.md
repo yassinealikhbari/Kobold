@@ -46,6 +46,8 @@ surface the next useful action for every application.
 
 ## Phase 1: Repair Scheduled Ingest And Source Health
 
+**Status:** Complete in `fix: make ingest scheduling and source health reliable`.
+
 ### Scope
 
 1. Make `/api/ingest` accept Vercel Cron's `GET` request for the lifecycle pass

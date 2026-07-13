@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 import { apiFetch } from '@/lib/api';
-import type { IngestRun, Job } from '@/types/jobs';
+import type { IngestRun, Job, SourceHealth } from '@/types/jobs';
 
 export type AppSettings = {
   id: 1;
@@ -20,6 +20,8 @@ export const useSettingsStore = defineStore('settings', {
     } as AppSettings,
     hiddenJobs: [] as Job[],
     runs: [] as IngestRun[],
+    sourceHealth: [] as SourceHealth[],
+    telegramConfigured: false,
     loading: false,
     saving: false,
     error: null as string | null,
@@ -30,10 +32,18 @@ export const useSettingsStore = defineStore('settings', {
       this.error = null;
 
       try {
-        const response = await apiFetch<{ settings: AppSettings; hiddenJobs: Job[]; runs: IngestRun[] }>('/settings');
+        const response = await apiFetch<{
+          settings: AppSettings;
+          hiddenJobs: Job[];
+          runs: IngestRun[];
+          sourceHealth: SourceHealth[];
+          telegramConfigured: boolean;
+        }>('/settings');
         this.settings = response.settings;
         this.hiddenJobs = response.hiddenJobs;
         this.runs = response.runs;
+        this.sourceHealth = response.sourceHealth;
+        this.telegramConfigured = response.telegramConfigured;
       } catch (error) {
         this.error = error instanceof Error ? error.message : 'Failed to load settings';
       } finally {
@@ -62,6 +72,18 @@ export const useSettingsStore = defineStore('settings', {
         body: { status: 'active' },
       });
       this.hiddenJobs = this.hiddenJobs.filter((job) => job.id !== id);
+    },
+    async rerunSource(source: string) {
+      this.saving = true;
+      this.error = null;
+      try {
+        await apiFetch(`/ingest?source=${encodeURIComponent(source)}`, { method: 'POST' });
+        await this.fetchSettings();
+      } catch (error) {
+        this.error = error instanceof Error ? error.message : 'Failed to rerun source';
+      } finally {
+        this.saving = false;
+      }
     },
   },
 });

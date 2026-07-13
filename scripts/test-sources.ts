@@ -6,9 +6,10 @@ for (const adapter of sourceAdapters) {
   const startedAt = Date.now();
 
   try {
-    const jobs = await adapter.fetchJobs();
+    const result = await adapter.fetchJobs();
     const elapsed = Date.now() - startedAt;
-    console.log(`${adapter.name}: ${jobs.length} jobs (${elapsed} ms)`);
+    console.log(`${adapter.name}: ${result.jobs.length} jobs (${elapsed} ms)`);
+    for (const warning of result.warnings ?? []) console.warn(`  warning: ${warning}`);
   } catch (error) {
     failures += 1;
     const elapsed = Date.now() - startedAt;

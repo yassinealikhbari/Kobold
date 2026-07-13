@@ -1,16 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { requireAuth, sendError } from '../_lib/auth.js';
+import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
 import { getSupabase } from '../_lib/db.js';
 import { serializeJob } from '../_lib/jobs.js';
+import { isTelegramConfigured } from '../_lib/telegram.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await requireAuth(req);
 
     if (req.method === 'GET') {
-      const [settings, hiddenJobs, runs] = await Promise.all([getSettings(), getHiddenJobs(), getRuns()]);
-      res.status(200).json({ settings, hiddenJobs, runs });
+      const [settings, hiddenJobs, runs, sourceHealth] = await Promise.all([
+        getSettings(),
+        getHiddenJobs(),
+        getRuns(),
+        getSourceHealth(),
+      ]);
+      res.status(200).json({ settings, hiddenJobs, runs, sourceHealth, telegramConfigured: isTelegramConfigured() });
       return;
     }
 
@@ -19,6 +25,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         typeof req.body?.notify_enabled === 'boolean' ? req.body.notify_enabled : undefined;
       const minScoreNotify =
         typeof req.body?.min_score_notify === 'number' ? req.body.min_score_notify : undefined;
+
+      if (notifyEnabled && !isTelegramConfigured()) {
+        throw new HttpError(400, 'Configure Telegram credentials before enabling notifications');
+      }
 
       const payload: Record<string, unknown> = { id: 1, updated_at: new Date().toISOString() };
       if (notifyEnabled !== undefined) payload.notify_enabled = notifyEnabled;
@@ -75,6 +85,12 @@ async function getRuns() {
     .order('started_at', { ascending: false })
     .limit(100);
 
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function getSourceHealth() {
+  const { data, error } = await getSupabase().from('source_health').select('*').order('source');
   if (error) throw error;
   return data ?? [];
 }

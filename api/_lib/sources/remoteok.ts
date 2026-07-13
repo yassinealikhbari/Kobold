@@ -24,7 +24,7 @@ export const remoteOkAdapter: SourceAdapter = {
       },
     });
 
-    return response
+    return { jobs: response
       .slice(1)
       .filter((item) => VUE_RE.test((item.tags ?? []).join(' ')))
       .map((item): RawJob | null =>
@@ -40,7 +40,7 @@ export const remoteOkAdapter: SourceAdapter = {
           salaryText: formatSalary(item.salary_min, item.salary_max),
         }),
       )
-      .filter(Boolean) as RawJob[];
+      .filter(Boolean) as RawJob[] };
   },
 };
 

@@ -15,5 +15,10 @@ export interface RawJob {
 
 export interface SourceAdapter {
   name: string;
-  fetchJobs(): Promise<RawJob[]>;
+  fetchJobs(): Promise<SourceFetchResult>;
 }
+
+export type SourceFetchResult = {
+  jobs: RawJob[];
+  warnings?: string[];
+};

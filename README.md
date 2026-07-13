@@ -81,7 +81,9 @@ Schedule:
 | `:25` | `germantechjobs` |
 | `04:00` | `lifecycle` |
 
-`vercel.json` also defines a daily lifecycle cron as a fallback.
+`vercel.json` defines the daily lifecycle cron. Vercel invokes it with `GET`
+and `Authorization: Bearer <CRON_SECRET>`; no extra header configuration is
+needed for that lifecycle request.
 
 ## Verification
 

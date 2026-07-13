@@ -10,6 +10,7 @@ export const germanTechJobsAdapter: SourceAdapter = {
   name: 'germantechjobs',
   async fetchJobs() {
     const jobs: RawJob[] = [];
+    const warnings: string[] = [];
 
     for (const url of URLS) {
       try {
@@ -31,12 +32,16 @@ export const germanTechJobsAdapter: SourceAdapter = {
 
           if (raw) jobs.push(raw);
         }
-      } catch {
-        continue;
+      } catch (error) {
+        warnings.push(`${url}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    return jobs;
+    if (jobs.length === 0 && warnings.length === URLS.length) {
+      throw new Error(`All GermanTechJobs pages failed: ${warnings.join(' | ')}`);
+    }
+
+    return { jobs, warnings };
   },
 };
 

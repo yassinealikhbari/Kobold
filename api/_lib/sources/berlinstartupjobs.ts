@@ -7,7 +7,7 @@ export const berlinStartupJobsAdapter: SourceAdapter = {
   async fetchJobs() {
     const xml = await fetchText('https://berlinstartupjobs.com/?s=vue&feed=rss2');
 
-    return parseRssItems(xml)
+    return { jobs: parseRssItems(xml)
       .map((item): RawJob | null => {
         const rawTitle = getText(item.title) ?? '';
         const parsedTitle = bestEffortBerlinStartupTitle(rawTitle);
@@ -22,6 +22,6 @@ export const berlinStartupJobsAdapter: SourceAdapter = {
           tags: ['vue'],
         });
       })
-      .filter(Boolean) as RawJob[];
+      .filter(Boolean) as RawJob[] };
   },
 };

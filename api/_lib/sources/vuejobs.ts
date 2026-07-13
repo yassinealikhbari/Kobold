@@ -12,7 +12,7 @@ export const vuejobsAdapter: SourceAdapter = {
     for (const feed of FEEDS) {
       try {
         const xml = await fetchText(feed);
-        return parseRssItems(xml)
+        return { jobs: parseRssItems(xml)
           .map((item): RawJob | null => {
             const rawTitle = getText(item.title) ?? '';
             const parsedTitle = splitRoleAtCompany(rawTitle);
@@ -27,7 +27,7 @@ export const vuejobsAdapter: SourceAdapter = {
 
             return raw;
           })
-          .filter(Boolean) as RawJob[];
+          .filter(Boolean) as RawJob[] };
       } catch (error) {
         lastError = error;
       }

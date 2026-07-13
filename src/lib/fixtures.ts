@@ -276,6 +276,20 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       settings: fixtureSettings,
       hiddenJobs: fixtureJobs.filter((job) => job.status === 'dismissed').map(serializeJob),
       runs: fixtureRuns,
+      sourceHealth: fixtureRuns.map((run) => ({
+        source: run.source,
+        last_run_at: run.finished_at ?? run.started_at,
+        last_success_at: run.finished_at,
+        last_nonempty_at: run.found > 0 ? run.finished_at : null,
+        last_outcome: run.error ? 'failed' : run.found === 0 ? 'empty' : 'success',
+        last_found: run.found,
+        last_matched: run.matched,
+        last_inserted: run.inserted,
+        last_duration_ms: 320,
+        last_error: run.error,
+        consecutive_failures: run.error ? 1 : 0,
+      })),
+      telegramConfigured: false,
     } as T;
   }
 

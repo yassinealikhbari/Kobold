@@ -1,11 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { constantTimeEqual, requireAuth, sendError } from './_lib/auth.js';
+import { requireAuth, sendError } from './_lib/auth.js';
 import { getSupabase } from './_lib/db.js';
+import { isAuthorizedIngestCron } from './_lib/ingest-auth.js';
+import { combineIngestMessages, determineIngestOutcome, type IngestOutcome } from './_lib/ingest-health.js';
+import { logServerError } from './_lib/logger.js';
 import { normalizeRawJob, type NormalizedJob } from './_lib/normalize.js';
 import { getSourceAdapter } from './_lib/sources/index.js';
 import type { RawJob } from './_lib/sources/types.js';
-import { sendJobNotifications, type TelegramJob } from './_lib/telegram.js';
+import { isTelegramConfigured, sendJobNotifications, type TelegramJob } from './_lib/telegram.js';
 
 type JobRow = {
   id: string;
@@ -38,21 +41,30 @@ type IngestRun = {
   matched: number;
   inserted: number;
   error: string | null;
+  outcome: IngestOutcome;
+  duration_ms: number | null;
 };
+
+type IngestStats = { found: number; matched: number; inserted: number };
 
 const ACTIVE_STATUSES = ['active', 'stale'] as const;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+  const source = typeof req.query.source === 'string' ? req.query.source : '';
+  const isLifecycleCron = req.method === 'GET' && source === 'lifecycle';
+  if (req.method !== 'POST' && !isLifecycleCron) {
+    res.setHeader('Allow', 'GET, POST');
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
-  try {
-    await authorizeIngest(req);
+  let run: IngestRun | null = null;
+  let stats: IngestStats = { found: 0, matched: 0, inserted: 0 };
+  const startedAt = Date.now();
 
-    const source = typeof req.query.source === 'string' ? req.query.source : '';
+  try {
+    await authorizeIngest(req, isLifecycleCron);
+
     if (!source) {
       res.status(400).json({ error: 'source query parameter is required' });
       return;
@@ -64,31 +76,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const run = await createRun(source);
+    run = await createRun(source);
 
     if (source === 'lifecycle') {
-      const finalized = await finalizeRun(run.id, await runLifecyclePass(), null);
+      const finalized = await completeRun(run, await runLifecyclePass(), 'success', null, startedAt);
       res.status(200).json({ run: finalized });
       return;
     }
 
     const adapter = getSourceAdapter(source);
     if (!adapter) {
-      const finalized = await finalizeRun(run.id, { found: 0, matched: 0, inserted: 0 }, `Unknown source: ${source}`);
+      const finalized = await completeRun(run, stats, 'failed', `Unknown source: ${source}`, startedAt);
       res.status(400).json({ error: `Unknown source: ${source}`, run: finalized });
       return;
     }
 
     let rawJobs: RawJob[] = [];
     let adapterError: string | null = null;
+    let adapterWarnings: string[] = [];
 
     try {
-      rawJobs = await adapter.fetchJobs();
+      const result = await adapter.fetchJobs();
+      rawJobs = result.jobs;
+      adapterWarnings = result.warnings ?? [];
     } catch (error) {
       adapterError = error instanceof Error ? error.message : String(error);
     }
 
-    const stats = { found: rawJobs.length, matched: 0, inserted: 0 };
+    stats = { found: rawJobs.length, matched: 0, inserted: 0 };
     await ensureSettingsRow();
     const settings = await getSettings();
     const notifyJobs: TelegramJob[] = [];
@@ -121,26 +136,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const telegramError = await sendJobNotifications(notifyJobs);
-    const errorMessage = [adapterError, telegramError].filter(Boolean).join(' | ') || null;
+    const telegramError = settings.notify_enabled && isTelegramConfigured() ? await sendJobNotifications(notifyJobs) : null;
+    const errorMessage = combineIngestMessages([adapterError, ...adapterWarnings, telegramError]);
+    const outcome = determineIngestOutcome({
+      found: stats.found,
+      adapterError,
+      warnings: adapterWarnings,
+      notificationError: telegramError,
+    });
 
-    const finalized = await finalizeRun(run.id, stats, errorMessage);
-    res.status(errorMessage ? 207 : 200).json({ run: finalized });
+    const finalized = await completeRun(run, stats, outcome, errorMessage, startedAt);
+    res.status(outcome === 'success' || outcome === 'empty' ? 200 : 207).json({ run: finalized });
   } catch (error) {
+    if (run) {
+      const message = error instanceof Error ? error.message : String(error);
+      try {
+        await completeRun(run, stats, 'failed', message, startedAt);
+      } catch (finalizeError) {
+        logServerError(finalizeError, { route: '/api/ingest/finalize', method: req.method, source });
+      }
+    }
+
     sendError(res, error, {
       route: '/api/ingest',
       method: req.method,
-      source: typeof req.query.source === 'string' ? req.query.source : undefined,
+      source: source || undefined,
     });
   }
 }
 
-async function authorizeIngest(req: VercelRequest): Promise<void> {
+async function authorizeIngest(req: VercelRequest, isLifecycleCron: boolean): Promise<void> {
   const header = req.headers['x-cron-secret'];
   const cronSecret = typeof header === 'string' ? header : undefined;
   const expected = process.env.CRON_SECRET;
 
-  if (cronSecret && expected && constantTimeEqual(cronSecret, expected)) {
+  const authorization = req.headers.authorization;
+  if (
+    isAuthorizedIngestCron({
+      expectedSecret: expected,
+      cronSecret,
+      authorization,
+      allowVercelAuthorization: isLifecycleCron,
+    })
+  ) {
     return;
   }
 
@@ -167,26 +205,81 @@ async function createRun(source: string): Promise<IngestRun> {
   return data as IngestRun;
 }
 
-async function finalizeRun(
-  id: string,
-  stats: { found: number; matched: number; inserted: number },
+async function completeRun(
+  run: IngestRun,
+  stats: IngestStats,
+  outcome: IngestOutcome,
   errorMessage: string | null,
+  startedAt: number,
 ): Promise<IngestRun> {
+  const finishedAt = new Date();
+  const durationMs = Math.max(0, Date.now() - startedAt);
   const { data, error } = await getSupabase()
     .from('ingest_runs')
     .update({
-      finished_at: new Date().toISOString(),
+      finished_at: finishedAt.toISOString(),
       found: stats.found,
       matched: stats.matched,
       inserted: stats.inserted,
       error: errorMessage,
+      outcome,
+      duration_ms: durationMs,
     })
-    .eq('id', id)
+    .eq('id', run.id)
     .select('*')
     .single();
 
   if (error) throw error;
-  return data as IngestRun;
+  const finalized = data as IngestRun;
+  if (run.source !== 'lifecycle') {
+    await updateSourceHealth({
+      source: run.source,
+      outcome,
+      stats,
+      errorMessage,
+      durationMs,
+      finishedAt: finishedAt.toISOString(),
+    });
+  }
+  return finalized;
+}
+
+async function updateSourceHealth(input: {
+  source: string;
+  outcome: IngestOutcome;
+  stats: IngestStats;
+  errorMessage: string | null;
+  durationMs: number;
+  finishedAt: string;
+}): Promise<void> {
+  const supabase = getSupabase();
+  const { data: existing, error: readError } = await supabase
+    .from('source_health')
+    .select('last_success_at,last_nonempty_at,consecutive_failures')
+    .eq('source', input.source)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const isSuccessful = input.outcome === 'success' || input.outcome === 'empty';
+  const consecutiveFailures = input.outcome === 'failed' ? Number(existing?.consecutive_failures ?? 0) + 1 : 0;
+  const { error } = await supabase.from('source_health').upsert(
+    {
+      source: input.source,
+      last_run_at: input.finishedAt,
+      last_success_at: isSuccessful ? input.finishedAt : existing?.last_success_at ?? null,
+      last_nonempty_at: input.stats.found > 0 ? input.finishedAt : existing?.last_nonempty_at ?? null,
+      last_outcome: input.outcome,
+      last_found: input.stats.found,
+      last_matched: input.stats.matched,
+      last_inserted: input.stats.inserted,
+      last_duration_ms: input.durationMs,
+      last_error: input.errorMessage,
+      consecutive_failures: consecutiveFailures,
+      updated_at: input.finishedAt,
+    },
+    { onConflict: 'source' },
+  );
+  if (error) throw error;
 }
 
 async function upsertJobs(jobs: NormalizedJob[], source: string): Promise<JobRow[]> {
@@ -327,7 +420,10 @@ async function ensureSettingsRow(): Promise<void> {
   if (error) throw error;
   if (data) return;
 
-  const { error: insertError } = await supabase.from('settings').insert({ id: 1 });
+  const { error: insertError } = await supabase.from('settings').insert({
+    id: 1,
+    notify_enabled: isTelegramConfigured(),
+  });
   if (insertError) throw insertError;
 }
 

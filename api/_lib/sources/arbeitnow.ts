@@ -53,7 +53,7 @@ export const arbeitnowAdapter: SourceAdapter = {
       if (page < 5) await sleep(500);
     }
 
-    return jobs.map(truncateRawJob);
+    return { jobs: jobs.map(truncateRawJob) };
   },
 };
 

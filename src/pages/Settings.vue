@@ -22,8 +22,9 @@ onMounted(() => {
 
     <section class="panel form-section">
       <h2>Notifications</h2>
+      <p v-if="!settings.telegramConfigured" class="form-hint">Configure Telegram credentials to enable notifications.</p>
       <label class="check-field">
-        <input v-model="settings.settings.notify_enabled" type="checkbox" />
+        <input v-model="settings.settings.notify_enabled" type="checkbox" :disabled="!settings.telegramConfigured" />
         <span>Telegram notifications enabled</span>
       </label>
       <label>
@@ -33,6 +34,22 @@ onMounted(() => {
       <button type="button" :disabled="settings.saving" @click="settings.saveSettings">
         {{ settings.saving ? 'Saving' : 'Save settings' }}
       </button>
+    </section>
+
+    <section class="panel form-section">
+      <h2>Source Health</h2>
+      <div v-if="settings.sourceHealth.length === 0" class="subtle">No source runs recorded yet.</div>
+      <article v-for="source in settings.sourceHealth" :key="source.source" class="settings-row">
+        <div>
+          <strong>{{ source.source }}</strong>
+          <p class="subtle">
+            {{ source.last_outcome }} · {{ source.last_found }} found · {{ source.last_matched }} matched
+            <span v-if="source.last_duration_ms"> · {{ source.last_duration_ms }} ms</span>
+          </p>
+          <p v-if="source.last_error" class="form-error">{{ source.last_error }}</p>
+        </div>
+        <button type="button" :disabled="settings.saving" @click="settings.rerunSource(source.source)">Rerun</button>
+      </article>
     </section>
 
     <section class="panel form-section">
