@@ -12,6 +12,7 @@
     "typecheck": "vue-tsc -b"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.3",
     "@vitejs/plugin-vue": "^6.0.0",
     "fast-xml-parser": "^5.10.0",
     "jose": "^6.2.3",

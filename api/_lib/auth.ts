@@ -57,6 +57,10 @@ export function getClientIp(req: VercelRequest): string {
 
 export function verifyPassword(candidate: string): boolean {
   const expected = requiredEnv('APP_PASSWORD');
+  return constantTimeEqual(candidate, expected);
+}
+
+export function constantTimeEqual(candidate: string, expected: string): boolean {
   const expectedBuffer = Buffer.from(expected);
   const candidateBuffer = Buffer.from(candidate);
   const paddedCandidate = Buffer.alloc(expectedBuffer.length);

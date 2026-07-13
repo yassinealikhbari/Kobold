@@ -1,4 +1,11 @@
-import { evaluateLocation, evaluateSeniority, isGermanRequired, isVueRelevant, scoreJob } from './filters';
+import {
+  evaluateEmploymentType,
+  evaluateLocation,
+  evaluateSeniority,
+  isGermanRequired,
+  isVueRelevant,
+  scoreJob,
+} from './filters';
 import type { RawJob } from './sources/types';
 
 const LEGAL_SUFFIX_RE = /\b(gmbh|se|ag|inc|ltd|co\.?\s?kg)\b/gi;
@@ -50,6 +57,7 @@ export function normalizeRawJob(raw: RawJob): NormalizeResult {
   const tags = raw.tags ?? [];
   const relevance = isVueRelevant({ title, tags, descriptionText });
   const location = evaluateLocation({ ...raw, descriptionText, tags });
+  const employmentType = evaluateEmploymentType({ title, tags, jobTypes: raw.jobTypes });
   const seniority = evaluateSeniority(title);
   const germanRequired = isGermanRequired(descriptionText);
   const extracted = extractApplyTarget(descriptionHtml);
@@ -85,6 +93,7 @@ export function normalizeRawJob(raw: RawJob): NormalizeResult {
 
   if (!relevance.keep) return { keep: false, reason: relevance.reason ?? 'not-vue-relevant' };
   if (!location.keep) return { keep: false, reason: location.reason ?? 'location-filtered' };
+  if (!employmentType.keep) return { keep: false, reason: employmentType.reason ?? 'employment-type-filtered' };
   if (!seniority.keep) return { keep: false, reason: seniority.reason ?? 'seniority-filtered' };
   if (germanRequired) return { keep: false, reason: 'german-required', job: baseJob };
 
