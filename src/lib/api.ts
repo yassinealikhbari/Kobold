@@ -42,7 +42,11 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   }
 
   if (!response.ok) {
-    throw new ApiError(`Request failed with ${response.status}`, response.status, body);
+    const message =
+      typeof body === 'object' && body !== null && 'error' in body && typeof body.error === 'string'
+        ? body.error
+        : `Request failed with ${response.status}`;
+    throw new ApiError(message, response.status, body);
   }
 
   return body as T;

@@ -37,6 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const file = await parsePdf(req);
       const bytes = await readFile(file.filepath);
+      if (!isPdf(bytes)) throw new HttpError(400, 'The uploaded file is not a valid PDF');
 
       const { error: uploadError } = await getSupabase().storage.from('documents').upload(CV_PATH, bytes, {
         contentType: 'application/pdf',
@@ -62,6 +63,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     sendError(res, error, { route: '/api/profile/cv', method: req.method });
   }
+}
+
+function isPdf(bytes: Buffer): boolean {
+  return bytes.subarray(0, 5).toString('ascii') === '%PDF-';
 }
 
 async function parsePdf(req: VercelRequest): Promise<formidable.File> {

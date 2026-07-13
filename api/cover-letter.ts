@@ -5,6 +5,8 @@ import { getOrCreateApplication, updateApplication } from './_lib/applications.j
 import { getJobById } from './_lib/jobs.js';
 import { getOrCreateProfile } from './_lib/profile.js';
 
+const MAX_INSTRUCTIONS_LENGTH = 1_000;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -22,10 +24,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!job) throw new HttpError(404, 'Job not found');
     if (!profile.summary) throw new HttpError(400, 'Complete your profile summary first');
 
+    const instructions = typeof req.body?.instructions === 'string' ? req.body.instructions.trim() : '';
+    if (instructions.length > MAX_INSTRUCTIONS_LENGTH) {
+      throw new HttpError(400, `Extra instructions must be ${MAX_INSTRUCTIONS_LENGTH} characters or fewer`);
+    }
+
     const letter = await generateCoverLetter({
       profile,
       job,
-      instructions: typeof req.body?.instructions === 'string' ? req.body.instructions : '',
+      instructions,
     });
 
     const application = await getOrCreateApplication(job.id);
@@ -51,6 +58,7 @@ async function generateCoverLetter(input: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       temperature: 0.7,

@@ -35,6 +35,13 @@ const copyFields = computed(() => [
   { label: 'Salary expectation', value: '' },
 ]);
 
+const missingProfileItems = computed(() => {
+  const missing: string[] = [];
+  if (!profile.profile.summary) missing.push('summary');
+  if (!profile.profile.cv_path) missing.push('CV');
+  return missing;
+});
+
 async function copy(value: string | null) {
   await navigator.clipboard.writeText(value ?? '');
 }
@@ -130,6 +137,7 @@ onMounted(async () => {
 <template>
   <section class="panel apply-panel">
     <h2>Apply Prep</h2>
+    <p v-if="missingProfileItems.length" class="form-hint">Add your {{ missingProfileItems.join(' and ') }} before applying.</p>
 
     <div class="copy-grid">
       <div v-for="field in copyFields" :key="field.label" class="copy-field">
