@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { requireAuth, sendError } from '../_lib/auth';
 import { updateApplication, type ApplicationStatus } from '../_lib/applications';
+import { getSupabase } from '../_lib/db';
 
 const STATUSES = new Set(['saved', 'applied', 'interviewing', 'offer', 'rejected']);
 
@@ -32,7 +33,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    res.setHeader('Allow', 'PATCH');
+    if (req.method === 'DELETE') {
+      const { error } = await getSupabase().from('applications').delete().eq('id', id);
+      if (error) throw error;
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    res.setHeader('Allow', 'PATCH, DELETE');
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     sendError(res, error);

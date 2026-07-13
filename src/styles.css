@@ -392,6 +392,10 @@ form.panel {
   margin: 0 0 20px;
 }
 
+.metadata-list.single {
+  grid-template-columns: 1fr;
+}
+
 .metadata-list dt {
   color: #94a3b8;
   font-size: 13px;
@@ -467,6 +471,74 @@ h3 {
   white-space: pre-wrap;
 }
 
+.tracker-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+.kanban-board {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.kanban-column {
+  display: grid;
+  min-height: 420px;
+  align-content: start;
+  gap: 10px;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  background: #111827;
+}
+
+.kanban-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #cbd5e1;
+}
+
+.kanban-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  text-transform: capitalize;
+}
+
+.kanban-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #243044;
+  border-radius: 8px;
+  padding: 12px;
+  background: #172033;
+  cursor: grab;
+}
+
+.kanban-card span,
+.kanban-card small {
+  color: #94a3b8;
+}
+
+.tracker-panel {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.tracker-panel label {
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -489,8 +561,18 @@ h3 {
   .detail-grid,
   .filter-bar,
   .form-grid,
-  .metadata-list {
+  .metadata-list,
+  .tracker-layout {
     grid-template-columns: 1fr;
+  }
+
+  .kanban-board {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .tracker-panel {
+    position: static;
   }
 
   .header-actions,
