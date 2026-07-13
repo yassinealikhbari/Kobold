@@ -31,6 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({ runs: Array.from(latestBySource.values()) });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, { route: '/api/jobs/sync-status', method: req.method });
   }
 }

@@ -14,6 +14,10 @@ type ApiOptions = Omit<RequestInit, 'body'> & {
 };
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
+    return fixtureRequest<T>(path, options);
+  }
+
   const { body: requestBody, ...requestOptions } = options;
   const headers = new Headers(options.headers);
   const init: RequestInit = {
@@ -43,3 +47,4 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   return body as T;
 }
+import { fixtureRequest } from './fixtures';

@@ -43,6 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Allow', 'GET, PATCH');
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, {
+      route: '/api/jobs/:id',
+      method: req.method,
+      entityId: typeof req.query.id === 'string' ? req.query.id : undefined,
+    });
   }
 }

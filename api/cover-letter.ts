@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({ letter, application: updatedApplication });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, { route: '/api/cover-letter', method: req.method });
   }
 }
 

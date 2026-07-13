@@ -21,6 +21,8 @@ surface the next useful action for every application.
 
 ## Phase 0: Establish A Reliable Baseline
 
+**Status:** Complete in `chore: add reliability baseline and CI`.
+
 ### Scope
 
 1. Create a production-readiness checklist for environment variables, Supabase

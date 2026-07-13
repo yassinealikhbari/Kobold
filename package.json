@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fixtures": "VITE_USE_FIXTURES=true vite",
     "dev:full": "npx vercel dev --listen 127.0.0.1:3001",
     "dev:vite": "vite",
     "build": "vue-tsc -b && vite build",

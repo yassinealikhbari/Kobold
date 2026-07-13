@@ -65,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       total: count ?? 0,
     });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, { route: '/api/jobs', method: req.method });
   }
 }
 

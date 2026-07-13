@@ -3,6 +3,8 @@ import { timingSafeEqual } from 'node:crypto';
 import type { VercelRequest } from '@vercel/node';
 import { jwtVerify, SignJWT } from 'jose';
 
+import { logServerError } from './logger.js';
+
 const COOKIE_NAME = 'vjh_session';
 const SESSION_DAYS = 30;
 const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
@@ -124,11 +126,16 @@ export function clearSessionCookie(): string {
   ].join('; ');
 }
 
-export function sendError(res: { status: (code: number) => { json: (body: unknown) => void } }, error: unknown) {
+export function sendError(
+  res: { status: (code: number) => { json: (body: unknown) => void } },
+  error: unknown,
+  context?: { route?: string; method?: string; source?: string; entityId?: string },
+) {
   if (error instanceof HttpError) {
     res.status(error.status).json({ error: error.message });
     return;
   }
 
+  logServerError(error, context);
   res.status(500).json({ error: 'Internal server error' });
 }

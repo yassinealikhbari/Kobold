@@ -123,6 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(404).json({ error: 'Not found' });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, { route: '/api/auth', method: req.method });
   }
 }

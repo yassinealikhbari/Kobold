@@ -127,7 +127,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const finalized = await finalizeRun(run.id, stats, errorMessage);
     res.status(errorMessage ? 207 : 200).json({ run: finalized });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, {
+      route: '/api/ingest',
+      method: req.method,
+      source: typeof req.query.source === 'string' ? req.query.source : undefined,
+    });
   }
 }
 

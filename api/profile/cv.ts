@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Allow', 'GET, POST');
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, { route: '/api/profile/cv', method: req.method });
   }
 }
 

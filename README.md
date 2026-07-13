@@ -10,6 +10,15 @@ cp .env.example .env
 npm run dev
 ```
 
+To run the complete UI without Supabase, Vercel, or live job sources, use:
+
+```bash
+npm run dev:fixtures
+```
+
+Fixture mode is development-only and authenticates a local fixture user. Do not
+set `VITE_USE_FIXTURES=true` in a production environment.
+
 For Vercel-style API routing locally:
 
 ```bash
