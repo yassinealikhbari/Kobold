@@ -4,7 +4,7 @@ import { requireAuth, sendError } from './_lib/auth.js';
 import { getSupabase } from './_lib/db.js';
 import { isAuthorizedIngestCron } from './_lib/ingest-auth.js';
 import { combineIngestMessages, determineIngestOutcome, type IngestOutcome } from './_lib/ingest-health.js';
-import { logServerError } from './_lib/logger.js';
+import { errorMessage, logServerError } from './_lib/logger.js';
 import { normalizeRawJob, type NormalizedJob } from './_lib/normalize.js';
 import { getSourceAdapter } from './_lib/sources/index.js';
 import type { RawJob } from './_lib/sources/types.js';
@@ -161,7 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(outcome === 'success' || outcome === 'empty' ? 200 : 207).json({ run: finalized });
   } catch (error) {
     if (run) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       try {
         await completeRun(run, stats, 'failed', message, startedAt);
       } catch (finalizeError) {
