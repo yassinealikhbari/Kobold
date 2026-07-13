@@ -5,6 +5,7 @@ import { getSupabase } from './_lib/db';
 import { normalizeRawJob, type NormalizedJob } from './_lib/normalize';
 import { getSourceAdapter } from './_lib/sources';
 import type { RawJob } from './_lib/sources/types';
+import { sendJobNotifications, type TelegramJob } from './_lib/telegram';
 
 type JobRow = {
   id: string;
@@ -88,23 +89,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const stats = { found: rawJobs.length, matched: 0, inserted: 0 };
+    await ensureSettingsRow();
+    const settings = await getSettings();
+    const notifyJobs: TelegramJob[] = [];
 
     for (const rawJob of rawJobs) {
       const result = normalizeRawJob(rawJob);
       if (!result.keep && !result.job) continue;
 
       if (result.job) {
-        const wasInserted = await upsertJob(result.job, source);
-        if (wasInserted) stats.inserted += 1;
+        const inserted = await upsertJob(result.job, source);
+        if (inserted) {
+          stats.inserted += 1;
+          if (
+            settings.notify_enabled &&
+            inserted.status === 'active' &&
+            inserted.score >= settings.min_score_notify
+          ) {
+            notifyJobs.push({
+              id: inserted.id,
+              title: inserted.title,
+              company: inserted.company,
+              location: inserted.location,
+              workplace: inserted.workplace,
+              score: inserted.score,
+              source,
+            });
+          }
+        }
       }
 
       if (result.keep) stats.matched += 1;
     }
 
-    await ensureSettingsRow();
+    const telegramError = await sendJobNotifications(notifyJobs);
+    const errorMessage = [adapterError, telegramError].filter(Boolean).join(' | ') || null;
 
-    const finalized = await finalizeRun(run.id, stats, adapterError);
-    res.status(adapterError ? 207 : 200).json({ run: finalized });
+    const finalized = await finalizeRun(run.id, stats, errorMessage);
+    res.status(errorMessage ? 207 : 200).json({ run: finalized });
   } catch (error) {
     sendError(res, error);
   }
@@ -164,14 +186,14 @@ async function finalizeRun(
   return data as IngestRun;
 }
 
-async function upsertJob(job: NormalizedJob, source: string): Promise<boolean> {
+async function upsertJob(job: NormalizedJob, source: string): Promise<JobRow | null> {
   const existing = await findJob(job.dedupeKey);
   const now = new Date().toISOString();
 
   if (!existing) {
-    const { error } = await getSupabase().from('jobs').insert(toInsertRow(job, source, now));
+    const { data, error } = await getSupabase().from('jobs').insert(toInsertRow(job, source, now)).select('*').single();
     if (error) throw error;
-    return job.status === 'active';
+    return data as JobRow;
   }
 
   const { error } = await getSupabase()
@@ -180,7 +202,7 @@ async function upsertJob(job: NormalizedJob, source: string): Promise<boolean> {
     .eq('id', existing.id);
 
   if (error) throw error;
-  return false;
+  return null;
 }
 
 async function findJob(dedupeKey: string): Promise<JobRow | null> {
@@ -296,4 +318,18 @@ async function ensureSettingsRow(): Promise<void> {
 
   const { error: insertError } = await supabase.from('settings').insert({ id: 1 });
   if (insertError) throw insertError;
+}
+
+async function getSettings(): Promise<{ notify_enabled: boolean; min_score_notify: number }> {
+  const { data, error } = await getSupabase()
+    .from('settings')
+    .select('notify_enabled,min_score_notify')
+    .eq('id', 1)
+    .single();
+
+  if (error) throw error;
+  return {
+    notify_enabled: Boolean(data.notify_enabled),
+    min_score_notify: Number(data.min_score_notify ?? 3),
+  };
 }

@@ -539,6 +539,43 @@ h3 {
   font-size: 14px;
 }
 
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #243044;
+  padding-top: 12px;
+}
+
+.settings-row p {
+  margin: 4px 0 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  border-bottom: 1px solid #243044;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -581,6 +618,7 @@ h3 {
   .job-card-footer,
   .repeat-row,
   .section-heading,
+  .settings-row,
   .sticky-actions,
   .ats-row,
   .copy-field {
