@@ -18,22 +18,21 @@ environment, database, or scheduling change.
 
 - [ ] Every file in `supabase/migrations/` has been applied in filename order.
   The current production API requires `002_application_status_timestamp.sql`,
-  `003_ingest_health.sql`, `004_board_explanations.sql`, and
-  `005_application_job_snapshots.sql`. Missing `002` breaks tracker status
-  updates; missing `005` prevents submitted applications from saving their
-  listing snapshots.
+  `003_ingest_health.sql`, `004_board_explanations.sql`,
+  `005_application_job_snapshots.sql`, and `006_job_fingerprints.sql`. Missing
+  `002` breaks tracker status updates; missing `005` prevents submitted
+  applications from saving their listing snapshots; missing `006` disables
+  duplicate-safe notifications.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.
 
 ## Ingest And Scheduling
 
-- [ ] Each external source has completed one successful manual ingest.
-- [ ] The lifecycle pass has completed successfully.
-- [ ] The production cron provider is configured with the correct source URL and
-  secret header.
-- [ ] Vercel Cron uses its supported authorization contract for the lifecycle
-  endpoint.
+- [ ] The all-source scan reports every configured adapter and records failures independently.
+- [ ] One `source=all` cron runs every three hours with the correct secret.
+- [ ] The first scan establishes a silent fingerprint baseline.
+- [ ] A later scan sends one combined Telegram digest for new jobs only.
 - [ ] Settings shows a clear error for one intentionally failed source request.
 
 ## User Workflows

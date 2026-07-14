@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
 import { getSupabase } from '../_lib/db.js';
+import { describeServerError } from '../_lib/logger.js';
 import { isTelegramConfigured } from '../_lib/telegram.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,12 +10,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await requireAuth(req);
 
     if (req.method === 'GET') {
-      const [settings, runs, sourceHealth] = await Promise.all([
+      const [settings, runs, sourceHealth, notificationStatus] = await Promise.all([
         getSettings(),
         getRuns(),
         getSourceHealth(),
+        getNotificationStatus(),
       ]);
-      res.status(200).json({ settings, runs, sourceHealth, telegramConfigured: isTelegramConfigured() });
+      res.status(200).json({
+        settings,
+        runs,
+        sourceHealth,
+        notificationStatus,
+        telegramConfigured: isTelegramConfigured(),
+      });
       return;
     }
 
@@ -26,6 +34,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (notifyEnabled && !isTelegramConfigured()) {
         throw new HttpError(400, 'Configure Telegram credentials before enabling notifications');
+      }
+      if (notifyEnabled && (await getNotificationStatus()).migrationRequired) {
+        throw new HttpError(409, 'Apply migration 006_job_fingerprints.sql before enabling notifications');
       }
 
       const payload: Record<string, unknown> = { id: 1, updated_at: new Date().toISOString() };
@@ -79,4 +90,45 @@ async function getSourceHealth() {
   const { data, error } = await getSupabase().from('source_health').select('*').order('source');
   if (error) throw error;
   return data ?? [];
+}
+
+async function getNotificationStatus() {
+  const trackedResult = await getSupabase()
+    .from('job_fingerprints')
+    .select('fingerprint', { count: 'exact', head: true });
+
+  if (trackedResult.error) {
+    if (isMissingFingerprintTable(trackedResult.error)) {
+      return { tracked: 0, pending: 0, lastNotifiedAt: null, migrationRequired: true };
+    }
+    throw trackedResult.error;
+  }
+
+  const [pendingResult, lastResult] = await Promise.all([
+    getSupabase()
+      .from('job_fingerprints')
+      .select('fingerprint', { count: 'exact', head: true })
+      .is('notified_at', null),
+    getSupabase()
+      .from('job_fingerprints')
+      .select('notified_at')
+      .not('notified_at', 'is', null)
+      .order('notified_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (pendingResult.error) throw pendingResult.error;
+  if (lastResult.error) throw lastResult.error;
+  return {
+    tracked: trackedResult.count ?? 0,
+    pending: pendingResult.count ?? 0,
+    lastNotifiedAt: lastResult.data?.notified_at ?? null,
+    migrationRequired: false,
+  };
+}
+
+function isMissingFingerprintTable(error: unknown): boolean {
+  const details = describeServerError(error);
+  return details.code === '42P01' || details.code === 'PGRST205' || /job_fingerprints/i.test(details.message);
 }

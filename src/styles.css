@@ -408,6 +408,41 @@ form.panel {
   padding-top: 16px;
 }
 
+.notification-settings {
+  max-width: 760px;
+}
+
+.notification-metrics {
+  display: grid;
+  border: var(--border-base) solid var(--ink);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.notification-metrics > div {
+  display: grid;
+  min-width: 0;
+  border-right: var(--border-thin) solid var(--ink);
+  padding: 10px;
+  gap: 3px;
+}
+
+.notification-metrics > div:last-child {
+  border-right: 0;
+}
+
+.notification-metrics span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.notification-metrics strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
 .filter-bar {
   display: grid;
   border: var(--border-strong) solid var(--ink);
@@ -1596,8 +1631,18 @@ th {
 
   .filter-bar,
   .form-grid,
-  .metadata-list {
+  .metadata-list,
+  .notification-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .notification-metrics > div {
+    border-right: 0;
+    border-bottom: var(--border-thin) solid var(--ink);
+  }
+
+  .notification-metrics > div:last-child {
+    border-bottom: 0;
   }
 
   .inbox-tabs {

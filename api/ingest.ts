@@ -3,11 +3,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAuth, sendError } from './_lib/auth.js';
 import { getSupabase } from './_lib/db.js';
 import { isAuthorizedIngestCron } from './_lib/ingest-auth.js';
-import { combineIngestMessages, determineIngestOutcome, type IngestOutcome } from './_lib/ingest-health.js';
+import { combineIngestMessages, type IngestOutcome } from './_lib/ingest-health.js';
+import { discoverJobs, type DiscoveryResult, type SourceCoverage } from './_lib/job-discovery.js';
+import { processJobNotifications, type JobNotificationResult } from './_lib/job-notifications.js';
 import { describeServerError, errorMessage, logServerError } from './_lib/logger.js';
-import { normalizeRawJob, type NormalizedJob } from './_lib/normalize.js';
 import { getSourceAdapter } from './_lib/sources/index.js';
-import type { RawJob } from './_lib/sources/types.js';
 
 type IngestRun = {
   id: string;
@@ -33,8 +33,8 @@ type IngestStats = {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const source = typeof req.query.source === 'string' ? req.query.source : '';
-  const isLifecycleCron = req.method === 'GET' && source === 'lifecycle';
-  if (req.method !== 'POST' && !isLifecycleCron) {
+  const isScheduledCron = req.method === 'GET' && (source === 'all' || source === 'lifecycle');
+  if (req.method !== 'POST' && !isScheduledCron) {
     res.setHeader('Allow', 'GET, POST');
     res.status(405).json({ error: 'Method not allowed' });
     return;
@@ -45,10 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const startedAt = Date.now();
 
   try {
-    await authorizeIngest(req, isLifecycleCron);
+    await authorizeIngest(req, isScheduledCron);
 
     if (!source) {
       res.status(400).json({ error: 'source query parameter is required' });
+      return;
+    }
+    if (source !== 'all' && source !== 'lifecycle' && !getSourceAdapter(source)) {
+      res.status(400).json({ error: `Unknown source: ${source}` });
       return;
     }
 
@@ -67,51 +71,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const adapter = getSourceAdapter(source);
-    if (!adapter) {
-      const finalized = await completeRun(run, stats, 'failed', `Unknown source: ${source}`, startedAt);
-      res.status(400).json({ error: `Unknown source: ${source}`, run: finalized });
-      return;
-    }
-
-    let rawJobs: RawJob[] = [];
-    let adapterError: string | null = null;
-    let adapterWarnings: string[] = [];
-
-    try {
-      const result = await adapter.fetchJobs();
-      rawJobs = result.jobs;
-      adapterWarnings = result.warnings ?? [];
-    } catch (error) {
-      adapterError = error instanceof Error ? error.message : String(error);
-    }
-
-    stats = { ...emptyStats(), found: rawJobs.length };
-    const matchingJobs: NormalizedJob[] = [];
-
-    for (const rawJob of rawJobs) {
-      const result = normalizeRawJob(rawJob);
-      if (!result.keep && !result.job) continue;
-
-      if (result.keep && result.job) matchingJobs.push(result.job);
-
-      if (result.keep) stats.matched += 1;
-    }
-
-    // This endpoint records source health only. Job listings are fetched directly by /api/jobs.
-    stats.inserted = 0;
-    // Without persisted source fingerprints, a cron run cannot distinguish new
-    // listings from listings seen previously. Do not resend the entire feed.
-    const errorMessage = combineIngestMessages([adapterError, ...adapterWarnings]);
-    const outcome = determineIngestOutcome({
-      found: stats.found,
-      adapterError,
-      warnings: adapterWarnings,
-      notificationError: null,
+    const discovery = await discoverJobs({
+      sources: source === 'all' ? undefined : [source],
+      forceRefresh: true,
     });
+    stats = {
+      ...emptyStats(),
+      found: discovery.coverage.reduce((total, item) => total + item.fetched, 0),
+      matched: discovery.jobs.length,
+    };
 
-    const finalized = await completeRun(run, stats, outcome, errorMessage, startedAt);
-    res.status(outcome === 'success' || outcome === 'empty' ? 200 : 207).json({ run: finalized });
+    let notification: JobNotificationResult | null = null;
+    let notificationError: string | null = null;
+    if (source === 'all') {
+      try {
+        notification = await processJobNotifications(discovery.jobs);
+        notificationError = notification.error;
+        stats.inserted = notification.newFingerprints;
+        stats.insertedActive = notification.sent;
+        stats.insertedDismissed = notification.pending;
+        stats.updated = notification.baselined;
+      } catch (error) {
+        notificationError = notificationFailureMessage(error);
+      }
+
+      await updateCoverageHealth(discovery.coverage, new Date().toISOString());
+    }
+
+    const runMessage = combineIngestMessages([
+      discoveryIssueMessage(discovery),
+      notificationError,
+    ]);
+    const outcome = determineScanOutcome(discovery, notificationError);
+    const finalized = await completeRun(run, stats, outcome, runMessage, startedAt);
+    const status = outcome === 'success' || outcome === 'empty' ? 200 : outcome === 'partial' ? 207 : 502;
+    res.status(status).json({
+      run: finalized,
+      notification,
+      coverage: discovery.coverage,
+      eligible: discovery.jobs.length,
+    });
   } catch (error) {
     if (run) {
       const message = errorMessage(error);
@@ -130,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function authorizeIngest(req: VercelRequest, isLifecycleCron: boolean): Promise<void> {
+async function authorizeIngest(req: VercelRequest, allowVercelAuthorization: boolean): Promise<void> {
   const header = req.headers['x-cron-secret'];
   const cronSecret = typeof header === 'string' ? header : undefined;
   const expected = process.env.CRON_SECRET;
@@ -141,7 +140,7 @@ async function authorizeIngest(req: VercelRequest, isLifecycleCron: boolean): Pr
       expectedSecret: expected,
       cronSecret,
       authorization,
-      allowVercelAuthorization: isLifecycleCron,
+      allowVercelAuthorization,
     })
   ) {
     return;
@@ -277,4 +276,58 @@ async function updateSourceHealth(input: {
 
 function emptyStats(): IngestStats {
   return { found: 0, matched: 0, inserted: 0, insertedActive: 0, insertedDismissed: 0, updated: 0 };
+}
+
+function determineScanOutcome(discovery: DiscoveryResult, notificationError: string | null): IngestOutcome {
+  if (discovery.coverage.length > 0 && discovery.coverage.every((source) => source.status === 'failed')) {
+    return 'failed';
+  }
+  if (
+    notificationError ||
+    discovery.coverage.some((source) => source.status === 'failed' || source.status === 'degraded')
+  ) {
+    return 'partial';
+  }
+  return discovery.jobs.length === 0 ? 'empty' : 'success';
+}
+
+function discoveryIssueMessage(discovery: DiscoveryResult): string | null {
+  if (discovery.issues.length === 0) return null;
+  const shown = discovery.issues.slice(0, 5).map((issue) => `${issue.source}: ${issue.error}`);
+  if (discovery.issues.length > shown.length) shown.push(`${discovery.issues.length - shown.length} more source issues`);
+  return shown.join(' | ');
+}
+
+function notificationFailureMessage(error: unknown): string {
+  const message = errorMessage(error);
+  if (/job_fingerprints|schema cache|PGRST205/i.test(message)) {
+    return `Database migration 006_job_fingerprints.sql is required: ${message}`;
+  }
+  return message;
+}
+
+async function updateCoverageHealth(coverage: SourceCoverage[], finishedAt: string): Promise<void> {
+  await Promise.all(
+    coverage.map((source) =>
+      updateSourceHealth({
+        source: source.source,
+        outcome: coverageOutcome(source),
+        stats: {
+          ...emptyStats(),
+          found: source.fetched,
+          matched: source.eligible,
+        },
+        errorMessage: combineIngestMessages([source.error, ...source.warnings]),
+        durationMs: source.duration_ms,
+        finishedAt,
+      }),
+    ),
+  );
+}
+
+function coverageOutcome(source: SourceCoverage): IngestOutcome {
+  if (source.status === 'failed') return 'failed';
+  if (source.status === 'degraded') return 'partial';
+  if (source.status === 'empty') return 'empty';
+  return 'success';
 }

@@ -4,8 +4,8 @@
   "framework": "vite",
   "crons": [
     {
-      "path": "/api/ingest?source=lifecycle",
-      "schedule": "0 4 * * *"
+      "path": "/api/ingest?source=all",
+      "schedule": "0 */3 * * *"
     }
   ],
   "rewrites": [

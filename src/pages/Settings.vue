@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 
+import TagChip from '@/components/TagChip.vue';
 import { absoluteDate } from '@/lib/dates';
 import { useSettingsStore } from '@/stores/settings';
 
@@ -19,6 +20,67 @@ onMounted(() => {
     </header>
 
     <p v-if="settings.error" class="form-error">{{ settings.error }}</p>
+
+    <section class="panel form-section notification-settings">
+      <div class="section-heading">
+        <h2>Telegram Digest</h2>
+        <TagChip
+          :label="settings.telegramConfigured ? 'Connected' : 'Not configured'"
+          :tone="settings.telegramConfigured ? 'muted' : 'warning'"
+        />
+      </div>
+
+      <div class="notification-metrics">
+        <div>
+          <span>Schedule</span>
+          <strong>Every 3 hours</strong>
+        </div>
+        <div>
+          <span>Tracked IDs</span>
+          <strong>{{ settings.notificationStatus.tracked }}</strong>
+        </div>
+        <div>
+          <span>Pending</span>
+          <strong>{{ settings.notificationStatus.pending }}</strong>
+        </div>
+        <div>
+          <span>Last sent</span>
+          <strong>
+            {{ settings.notificationStatus.lastNotifiedAt ? absoluteDate(settings.notificationStatus.lastNotifiedAt) : 'Never' }}
+          </strong>
+        </div>
+      </div>
+
+      <p v-if="settings.notificationStatus.migrationRequired" class="form-error">
+        Apply migration 006_job_fingerprints.sql to activate duplicate-safe alerts.
+      </p>
+      <p v-else-if="!settings.telegramConfigured" class="form-hint">
+        Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel.
+      </p>
+
+      <label class="check-field">
+        <input
+          v-model="settings.settings.notify_enabled"
+          type="checkbox"
+          :disabled="
+            settings.notificationStatus.migrationRequired ||
+            (!settings.telegramConfigured && !settings.settings.notify_enabled)
+          "
+        />
+        Send one combined new-job digest
+      </label>
+      <button
+        type="button"
+        :disabled="
+          settings.saving ||
+          settings.notificationStatus.migrationRequired ||
+          (!settings.telegramConfigured && settings.settings.notify_enabled)
+        "
+        @click="settings.saveSettings"
+      >
+        {{ settings.saving ? 'Saving' : 'Save alerts' }}
+      </button>
+    </section>
 
     <section class="panel form-section">
       <h2>Source Health</h2>
@@ -46,9 +108,9 @@ onMounted(() => {
               <th>Started</th>
               <th>Found</th>
               <th>Matched</th>
-              <th>Active</th>
-              <th>Dismissed</th>
-              <th>Updated</th>
+              <th>New IDs</th>
+              <th>Sent</th>
+              <th>Pending</th>
               <th>Error</th>
             </tr>
           </thead>
@@ -58,9 +120,9 @@ onMounted(() => {
               <td>{{ absoluteDate(run.started_at) }}</td>
               <td>{{ run.found }}</td>
               <td>{{ run.matched }}</td>
-              <td>{{ run.inserted_active ?? run.inserted }}</td>
+              <td>{{ run.inserted }}</td>
+              <td>{{ run.inserted_active ?? 0 }}</td>
               <td>{{ run.inserted_dismissed ?? 0 }}</td>
-              <td>{{ run.updated ?? 0 }}</td>
               <td>{{ run.error || '' }}</td>
             </tr>
           </tbody>

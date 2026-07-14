@@ -10,17 +10,30 @@ export type AppSettings = {
   updated_at: string;
 };
 
+export type NotificationStatus = {
+  tracked: number;
+  pending: number;
+  lastNotifiedAt: string | null;
+  migrationRequired: boolean;
+};
+
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     settings: {
       id: 1,
-      notify_enabled: true,
+      notify_enabled: false,
       min_score_notify: 3,
       updated_at: new Date().toISOString(),
     } as AppSettings,
     runs: [] as IngestRun[],
     sourceHealth: [] as SourceHealth[],
     telegramConfigured: false,
+    notificationStatus: {
+      tracked: 0,
+      pending: 0,
+      lastNotifiedAt: null,
+      migrationRequired: false,
+    } as NotificationStatus,
     loading: false,
     saving: false,
     error: null as string | null,
@@ -35,11 +48,13 @@ export const useSettingsStore = defineStore('settings', {
           settings: AppSettings;
           runs: IngestRun[];
           sourceHealth: SourceHealth[];
+          notificationStatus: NotificationStatus;
           telegramConfigured: boolean;
         }>('/settings');
         this.settings = response.settings;
         this.runs = response.runs;
         this.sourceHealth = response.sourceHealth;
+        this.notificationStatus = response.notificationStatus;
         this.telegramConfigured = response.telegramConfigured;
       } catch (error) {
         this.error = error instanceof Error ? error.message : 'Failed to load settings';
