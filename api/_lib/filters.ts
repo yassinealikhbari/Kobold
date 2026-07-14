@@ -1,28 +1,102 @@
 import type { RawJob } from './sources/types.js';
 
-export const VUE_RE = /\b(vue(\.js|js)?|nuxt(\.js|js)?)\b/i;
+export const VUE_RE = /\b(vue(?:\.js|js)?|nuxt(?:\.js|js)?)\b/i;
 
-const FRONTEND_TITLE_RE = /(front.?end|full.?stack|web|software|javascript|typescript)/i;
-const VUE_DESCRIPTION_RE = /\bvue(\.js|js)?\b/i;
-const FRONTEND_ROLE_TITLE_RE = /front.?end/i;
-const REMOTE_RE = /remote/i;
-const EUROPE_RE = /(europe|emea|eu\b|cet|european|worldwide|anywhere|germany|deutschland)/i;
-const NON_EU_REMOTE_RE = /(united states|usa|us only|canada|latam|americas|apac|asia|australia|india|africa)/i;
-const EXCLUDED_TYPE_RE =
-  /(part.?time|teilzeit|internship|intern\b|praktikum|working student|werkstudent|freelance|contract\b|contractor|mini.?job)/i;
-const FULL_TIME_RE = /full.?time|vollzeit/i;
-const JUNIOR_RE = /(junior|entry.?level|graduate|trainee)/i;
-const SENIOR_RE = /(senior|staff|principal|lead)/i;
-const MID_RE = /(mid|intermediate)/i;
-const GERMAN_REQUIRED_RE =
-  /(german|deutsch)\w*[^.!?\n]{0,60}(required|must|mandatory|essential|fluent|native|c1|c2|verhandlungssicher|fließend)/i;
-const GERMAN_REQUIRED_REVERSE_RE =
-  /(fluent|native|c1|c2|verhandlungssicher|fließend)[^.!?\n]{0,60}(german|deutsch)/i;
-const GERMAN_PLUS_RE = /(plus|nice.to.have|bonus|advantage|beneficial|not required|optional|a plus)/i;
-const LONG_EXPERIENCE_RE = /\b([7-9]|1[0-9])\+?\s*years?/i;
+const REACT_RE = /\breact(?:\.js|js)?\b/i;
+const FRONTEND_RE = /\bfront[\s-]?end\b/i;
+const FULL_STACK_RE = /\bfull[\s-]?stack\b/i;
+const UI_RE = /\b(?:ui|user interface)\b/i;
+const PRODUCT_ENGINEER_RE = /\bproduct\s+(?:software\s+)?(?:engineer|developer)\b/i;
+const SOFTWARE_ENGINEER_RE = /\bsoftware\s+(?:engineer|developer)\b/i;
+const ENGINEER_OR_DEVELOPER_RE = /\b(?:engineer|developer)\b/i;
+const OUT_OF_SCOPE_LEVEL_RE = /\b(?:staff|principal|lead|manager|director|head|architect|vp|vice president|chief)\b/i;
+const JUNIOR_RE = /\b(?:junior|entry[\s-]?level|graduate|trainee|apprentice|student|intern(?:ship)?)\b/i;
+const SENIOR_RE = /\b(?:senior|sr\.?)\b/i;
+const MID_RE = /\b(?:mid(?:dle)?[\s-]?level|mid|intermediate)\b/i;
+const MOBILE_RE = /\b(?:mobile|android|ios|react native|flutter)\b/i;
+const NON_PRODUCT_ENGINEERING_RE =
+  /\b(?:back[\s-]?end|data|machine learning|ml|ai|devops|site reliability|sre|security|qa|quality assurance|test automation|embedded|firmware|infrastructure|platform|support)\b/i;
+
+const FULL_TIME_RE = /\b(?:full[\s-]?time|permanent|vollzeit)\b/i;
+const CONTRACT_RE = /\b(?:contract|contractor|fixed[\s-]?term|temporary)\b/i;
+const FREELANCE_RE = /\b(?:freelance|freelancer|self[\s-]?employed)\b/i;
+const PART_TIME_RE = /\b(?:part[\s-]?time|teilzeit|mini[\s-]?job)\b/i;
+const INTERNSHIP_RE = /\b(?:intern(?:ship)?|working student|werkstudent|student job|praktikum|trainee)\b/i;
+
+const REMOTE_RE = /\b(?:remote|work from home|home office)\b/i;
+const DESCRIPTION_REMOTE_RE = /\b(?:fully remote|100% remote|remote[\s-]?first|work from anywhere)\b/i;
+const HYBRID_RE = /\bhybrid\b/i;
+const GERMANY_RE =
+  /\b(?:germany|deutschland|berlin|hamburg|munich|m[üu]nchen|cologne|k[öo]ln|frankfurt|stuttgart|d[üu]sseldorf|leipzig|dresden|bremen|hannover|hanover|nuremberg|n[üu]rnberg|dortmund|essen|bonn|karlsruhe|mannheim|potsdam|aachen|m[üu]nster|freiburg|heidelberg)\b/i;
+const GERMANY_COUNTRY_CODE_RE = /(?:^|[,|/()\s])DEU?(?=$|[,|/()\s])/i;
+const EUROPE_RE =
+  /\b(?:europe|european union|eu|emea|cet|cest|dach|austria|belgium|bulgaria|croatia|cyprus|czech(?:ia| republic)?|denmark|estonia|finland|france|greece|hungary|ireland|italy|latvia|lithuania|luxembourg|malta|netherlands|poland|portugal|romania|slovakia|slovenia|spain|sweden|switzerland|norway|iceland|liechtenstein|united kingdom|uk)\b/i;
+const EUROPE_COUNTRY_CODE_RE =
+  /(?:^|[,|/()\s])(?:AT|AUT|BE|BEL|BG|BGR|HR|HRV|CY|CYP|CZ|CZE|DK|DNK|EE|EST|FI|FIN|FR|FRA|GR|GRC|HU|HUN|IE|IRL|IT|ITA|LV|LVA|LT|LTU|LU|LUX|MT|MLT|NL|NLD|PL|POL|PT|PRT|RO|ROU|SK|SVK|SI|SVN|ES|ESP|SE|SWE|CH|CHE|NO|NOR|IS|ISL|LI|LIE|GB|GBR|UK)(?=$|[,|/()\s])/i;
+const WORLDWIDE_RE = /\b(?:worldwide|anywhere|global|work from anywhere|all countries|international)\b/i;
+const NON_EU_REMOTE_RE =
+  /\b(?:united states|u\.s\.|usa|us only|north america|canada|latam|latin america|americas|apac|asia|australia|new zealand|india|africa|middle east)\b/i;
+const AMBIGUOUS_LOCATION_RE = /\b(?:multiple locations|various locations|location flexible|tbd|not specified|europe|eu|emea)\b/i;
+
+const GERMAN_REQUIREMENT_RE = [
+  /\b(?:german|deutsch)\b[^.!?\n]{0,80}\b(?:required|mandatory|must|essential|fluent|native|business fluent|c1|c2|verhandlungssicher|flie(?:ss|ß)end)\b/i,
+  /\b(?:required|mandatory|must|essential|fluent|native|business fluent|c1|c2)\b[^.!?\n]{0,80}\b(?:german|deutsch)\b/i,
+];
+const OPTIONAL_GERMAN_RE =
+  /\b(?:not required|optional|nice to have|a plus|plus|bonus|advantage|preferred|beneficial|helpful)\b/i;
+const LONG_EXPERIENCE_RE = /\b(?:[7-9]|1[0-9])\+?\s*(?:years?|yrs?)\b/i;
+
+const GERMAN_WORDS = new Set([
+  'aber',
+  'als',
+  'auch',
+  'auf',
+  'bei',
+  'das',
+  'deine',
+  'den',
+  'der',
+  'dich',
+  'die',
+  'du',
+  'eine',
+  'einen',
+  'für',
+  'im',
+  'ist',
+  'mit',
+  'sind',
+  'suchen',
+  'und',
+  'unser',
+  'werden',
+  'wir',
+  'zu',
+]);
+const ENGLISH_WORDS = new Set([
+  'and',
+  'are',
+  'as',
+  'at',
+  'for',
+  'from',
+  'in',
+  'is',
+  'of',
+  'our',
+  'the',
+  'to',
+  'we',
+  'with',
+  'you',
+  'your',
+]);
 
 export type Workplace = 'remote' | 'hybrid' | 'onsite' | 'unknown';
 export type Seniority = 'mid' | 'senior' | 'mixed' | 'unknown';
+export type Technology = 'vue' | 'nuxt' | 'react';
+export type EmploymentType = 'full-time' | 'contract' | 'freelance' | 'unknown';
+export type RoleFamily = 'frontend' | 'ui' | 'product' | 'full-stack' | 'software';
 
 export type ScoreResult = {
   score: number;
@@ -32,102 +106,234 @@ export type ScoreResult = {
 export type FilterDecision = {
   keep: boolean;
   reason?: string;
+  warnings?: string[];
+};
+
+export type RoleDecision = FilterDecision & {
+  family: RoleFamily | null;
 };
 
 export type LocationDecision = FilterDecision & {
   workplace: Workplace;
   scoreAdjustment: number;
-  badge?: 'Berlin' | 'Remote EU' | 'region unverified' | 'location unknown';
+  badge?: 'Berlin' | 'Germany' | 'Remote Europe' | 'Remote worldwide' | 'region unverified' | 'location unknown';
 };
 
-export function isVueRelevant(raw: Pick<RawJob, 'title' | 'tags' | 'descriptionText'>): FilterDecision {
-  const tags = raw.tags?.join(' ') ?? '';
-  const titleOrTags = `${raw.title} ${tags}`;
-  if (VUE_RE.test(titleOrTags)) return { keep: true };
+export type EmploymentDecision = FilterDecision & {
+  employmentTypes: EmploymentType[];
+};
 
-  const description = raw.descriptionText ?? '';
-  if (VUE_RE.test(description) && FRONTEND_TITLE_RE.test(raw.title)) {
-    return { keep: true, reason: 'weak-description-match' };
+export type FreshnessDecision = FilterDecision & {
+  postedAt?: string;
+};
+
+export type LanguageDecision = FilterDecision & {
+  germanRequired: boolean;
+};
+
+export function evaluateRole(title: string, options: { trustedVueSource?: boolean } = {}): RoleDecision {
+  if (JUNIOR_RE.test(title)) return { keep: false, family: null, reason: 'junior-or-entry-level' };
+  if (OUT_OF_SCOPE_LEVEL_RE.test(title)) return { keep: false, family: null, reason: 'seniority-out-of-scope' };
+
+  const family = detectRoleFamily(title, options);
+  if (!family) return { keep: false, family: null, reason: 'role-family-mismatch' };
+  if (MOBILE_RE.test(title)) return { keep: false, family, reason: 'discipline-out-of-scope' };
+
+  const hasFrontendScope = FRONTEND_RE.test(title) || FULL_STACK_RE.test(title) || UI_RE.test(title);
+  if (NON_PRODUCT_ENGINEERING_RE.test(title) && !hasFrontendScope) {
+    return { keep: false, family, reason: 'discipline-out-of-scope' };
   }
 
-  return { keep: false, reason: 'not-vue-relevant' };
+  return { keep: true, family };
+}
+
+export function detectRoleFamily(title: string, options: { trustedVueSource?: boolean } = {}): RoleFamily | null {
+  if (FRONTEND_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'frontend';
+  if (UI_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'ui';
+  if (PRODUCT_ENGINEER_RE.test(title)) return 'product';
+  if (FULL_STACK_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'full-stack';
+  if (SOFTWARE_ENGINEER_RE.test(title)) return 'software';
+  if (options.trustedVueSource && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'frontend';
+  return null;
 }
 
 export function evaluateLocation(
   raw: Pick<RawJob, 'location' | 'descriptionText' | 'remote' | 'tags'>,
 ): LocationDecision {
-  const location = raw.location ?? '';
-  const description = raw.descriptionText ?? '';
+  const location = raw.location?.trim() ?? '';
   const tags = raw.tags?.join(' ') ?? '';
-  const searchable = `${location} ${description} ${tags}`;
+  const description = raw.descriptionText?.slice(0, 3_000) ?? '';
+  const locationSignals = `${location} ${tags}`;
+  const isHybrid = HYBRID_RE.test(locationSignals);
+  const isRemote =
+    raw.remote === true || isHybrid || REMOTE_RE.test(locationSignals) || DESCRIPTION_REMOTE_RE.test(description);
+  const workplace: Workplace = isHybrid ? 'hybrid' : isRemote ? 'remote' : location ? 'onsite' : 'unknown';
 
-  if (/berlin/i.test(location)) {
+  if (GERMANY_RE.test(locationSignals) || GERMANY_COUNTRY_CODE_RE.test(location)) {
     return {
       keep: true,
-      workplace: raw.remote || REMOTE_RE.test(searchable) ? 'remote' : 'onsite',
+      workplace,
       scoreAdjustment: 0,
-      badge: 'Berlin',
+      badge: /berlin/i.test(locationSignals) ? 'Berlin' : 'Germany',
     };
   }
 
-  const remote = raw.remote === true || REMOTE_RE.test(`${location} ${tags}`);
-  if (remote) {
-    if (EUROPE_RE.test(searchable)) {
-      return { keep: true, workplace: 'remote', scoreAdjustment: 0, badge: 'Remote EU' };
+  if (isRemote) {
+    if (WORLDWIDE_RE.test(locationSignals)) {
+      return { keep: true, workplace, scoreAdjustment: 0, badge: 'Remote worldwide' };
+    }
+    if (EUROPE_RE.test(locationSignals) || EUROPE_COUNTRY_CODE_RE.test(location)) {
+      return { keep: true, workplace, scoreAdjustment: 0, badge: 'Remote Europe' };
+    }
+    if (NON_EU_REMOTE_RE.test(locationSignals)) {
+      return { keep: false, workplace, scoreAdjustment: 0, reason: 'remote-region-out-of-scope' };
     }
 
-    if (NON_EU_REMOTE_RE.test(searchable) && !EUROPE_RE.test(searchable)) {
-      return { keep: false, workplace: 'remote', scoreAdjustment: 0, reason: 'remote-non-eu' };
-    }
-
-    return { keep: true, workplace: 'remote', scoreAdjustment: -1, badge: 'region unverified' };
+    return {
+      keep: true,
+      workplace,
+      scoreAdjustment: -1,
+      badge: 'region unverified',
+      warnings: ['remote-region-unverified'],
+    };
   }
 
-  if (location.trim().length > 0) {
-    return { keep: false, workplace: 'onsite', scoreAdjustment: 0, reason: 'not-berlin-or-remote' };
+  if (!location) {
+    return {
+      keep: true,
+      workplace: 'unknown',
+      scoreAdjustment: -1,
+      badge: 'location unknown',
+      warnings: ['location-unverified'],
+    };
   }
 
-  return { keep: true, workplace: 'unknown', scoreAdjustment: -1, badge: 'location unknown' };
+  if (AMBIGUOUS_LOCATION_RE.test(location)) {
+    return {
+      keep: true,
+      workplace: 'unknown',
+      scoreAdjustment: -1,
+      warnings: ['workplace-unverified'],
+    };
+  }
+
+  return { keep: false, workplace: 'onsite', scoreAdjustment: 0, reason: 'onsite-outside-germany' };
 }
 
-export function evaluateEmploymentType(raw: Pick<RawJob, 'title' | 'tags' | 'jobTypes'>): FilterDecision {
-  const searchable = [raw.title, ...(raw.tags ?? []), ...(raw.jobTypes ?? [])].join(' ');
-  if (EXCLUDED_TYPE_RE.test(searchable) && !FULL_TIME_RE.test(searchable)) {
-    return { keep: false, reason: 'excluded-employment-type' };
+export function evaluateEmploymentType(
+  raw: Pick<RawJob, 'title' | 'tags' | 'jobTypes' | 'descriptionText'>,
+): EmploymentDecision {
+  const searchable = [raw.title, ...(raw.tags ?? []), ...(raw.jobTypes ?? []), raw.descriptionText?.slice(0, 1_500) ?? ''].join(
+    ' ',
+  );
+
+  if (INTERNSHIP_RE.test(searchable)) {
+    return { keep: false, reason: 'internship-or-student-role', employmentTypes: [] };
   }
 
-  return { keep: true };
+  const employmentTypes: EmploymentType[] = [];
+  if (FULL_TIME_RE.test(searchable)) employmentTypes.push('full-time');
+  if (CONTRACT_RE.test(searchable)) employmentTypes.push('contract');
+  if (FREELANCE_RE.test(searchable)) employmentTypes.push('freelance');
+
+  const partTime = PART_TIME_RE.test(searchable);
+  if (partTime && employmentTypes.length === 0) {
+    return { keep: false, reason: 'part-time-only', employmentTypes: [] };
+  }
+  if (employmentTypes.length === 0) {
+    return { keep: true, employmentTypes: ['unknown'], warnings: ['employment-type-unverified'] };
+  }
+
+  return {
+    keep: true,
+    employmentTypes,
+    warnings: partTime ? ['also-offers-part-time'] : [],
+  };
 }
 
 export function evaluateSeniority(title: string): FilterDecision & { seniority: Seniority } {
   if (JUNIOR_RE.test(title)) {
-    return { keep: false, seniority: 'unknown', reason: 'junior' };
+    return { keep: false, seniority: 'unknown', reason: 'junior-or-entry-level' };
+  }
+  if (OUT_OF_SCOPE_LEVEL_RE.test(title)) {
+    return { keep: false, seniority: 'unknown', reason: 'seniority-out-of-scope' };
   }
 
   const senior = SENIOR_RE.test(title);
   const mid = MID_RE.test(title);
-
   if (senior && mid) return { keep: true, seniority: 'mixed' };
   if (senior) return { keep: true, seniority: 'senior' };
   if (mid) return { keep: true, seniority: 'mid' };
 
-  return { keep: true, seniority: 'unknown' };
+  return { keep: true, seniority: 'unknown', warnings: ['seniority-unverified'] };
+}
+
+export function evaluateFreshness(postedAt: string | undefined, now: Date, maxAgeDays: number): FreshnessDecision {
+  if (!postedAt) return { keep: true, warnings: ['publication-date-unverified'] };
+
+  const timestamp = Date.parse(postedAt);
+  if (Number.isNaN(timestamp)) return { keep: true, warnings: ['publication-date-unverified'] };
+
+  const normalized = new Date(timestamp).toISOString();
+  const cutoff = now.getTime() - maxAgeDays * 24 * 60 * 60 * 1_000;
+  if (timestamp < cutoff) return { keep: false, reason: 'older-than-14-days', postedAt: normalized };
+  return { keep: true, postedAt: normalized };
+}
+
+export function evaluateLanguage(descriptionText: string): LanguageDecision {
+  const sample = descriptionText.slice(0, 8_000);
+  const sentences = sample.split(/(?<=[.!?\n])/);
+  const explicitlyRequired = sentences.some((sentence) => {
+    if (OPTIONAL_GERMAN_RE.test(sentence)) return false;
+    return GERMAN_REQUIREMENT_RE.some((pattern) => pattern.test(sentence));
+  });
+  if (explicitlyRequired) {
+    return { keep: false, germanRequired: true, reason: 'german-required' };
+  }
+
+  const tokens = sample.toLowerCase().match(/[\p{L}]+/gu) ?? [];
+  let germanCount = 0;
+  let englishCount = 0;
+  for (const token of tokens) {
+    if (GERMAN_WORDS.has(token)) germanCount += 1;
+    if (ENGLISH_WORDS.has(token)) englishCount += 1;
+  }
+  if (germanCount >= 10 && germanCount > englishCount * 1.35) {
+    return { keep: false, germanRequired: true, reason: 'german-language-listing' };
+  }
+
+  if (/\b(?:german|deutsch)\b/i.test(sample)) {
+    return { keep: true, germanRequired: false, warnings: ['german-mentioned-not-required'] };
+  }
+  return { keep: true, germanRequired: false };
 }
 
 export function isGermanRequired(descriptionText: string): boolean {
-  const sample = ` ${descriptionText.slice(0, 2000).toLowerCase()} `;
-  const germanStopwords = [' der ', ' die ', ' das ', ' und ', ' für ', ' mit ', ' wir ', ' du '];
-  const englishStopwords = [' the ', ' and ', ' for ', ' with ', ' you ', ' we '];
-  const germanCount = germanStopwords.reduce((sum, word) => sum + countOccurrences(sample, word), 0);
-  const englishCount = englishStopwords.reduce((sum, word) => sum + countOccurrences(sample, word), 0);
+  return evaluateLanguage(descriptionText).germanRequired;
+}
 
-  if (germanCount > englishCount) return true;
+export function detectTechnologies(input: {
+  title: string;
+  tags?: string[];
+  descriptionText?: string;
+  trustedVueSource?: boolean;
+}): Technology[] {
+  const searchable = `${input.title} ${(input.tags ?? []).join(' ')} ${input.descriptionText ?? ''}`;
+  const technologies = new Set<Technology>();
+  if (input.trustedVueSource || /\bvue(?:\.js|js)?\b/i.test(searchable)) technologies.add('vue');
+  if (/\bnuxt(?:\.js|js)?\b/i.test(searchable)) {
+    technologies.add('nuxt');
+    technologies.add('vue');
+  }
+  if (REACT_RE.test(searchable)) technologies.add('react');
+  return Array.from(technologies);
+}
 
-  const sentences = descriptionText.split(/(?<=[.!?\n])/);
-  return sentences.some((sentence) => {
-    const mentionsRequirement = GERMAN_REQUIRED_RE.test(sentence) || GERMAN_REQUIRED_REVERSE_RE.test(sentence);
-    return mentionsRequirement && !GERMAN_PLUS_RE.test(sentence);
-  });
+export function isVueRelevant(raw: Pick<RawJob, 'title' | 'tags' | 'descriptionText'>): FilterDecision {
+  const technologies = detectTechnologies(raw);
+  return technologies.includes('vue') || technologies.includes('nuxt')
+    ? { keep: true }
+    : { keep: false, reason: 'not-vue-relevant' };
 }
 
 export function scoreJob(input: {
@@ -166,11 +372,11 @@ export function scoreJobDetails(input: {
     score += 2;
     reasons.push('Vue or Nuxt tag');
   }
-  if (VUE_DESCRIPTION_RE.test(description)) {
+  if (/\bvue(?:\.js|js)?\b/i.test(description)) {
     score += 1;
     reasons.push('Vue in description');
   }
-  if (FRONTEND_ROLE_TITLE_RE.test(input.title)) {
+  if (FRONTEND_RE.test(input.title)) {
     score += 1;
     reasons.push('Frontend role');
   }
@@ -182,11 +388,11 @@ export function scoreJobDetails(input: {
     score += 2;
     reasons.push('Remote Europe');
   }
-  if (/typescript/i.test(`${input.title} ${tagText} ${description}`)) {
+  if (/\btypescript\b/i.test(`${input.title} ${tagText} ${description}`)) {
     score += 1;
     reasons.push('TypeScript');
   }
-  if (/\bnuxt(\.js|js)?\b/i.test(`${input.title} ${tagText} ${description}`)) {
+  if (/\bnuxt(?:\.js|js)?\b/i.test(`${input.title} ${tagText} ${description}`)) {
     score += 1;
     reasons.push('Nuxt');
   }
@@ -208,14 +414,6 @@ export function scoreJobDetails(input: {
   return { score: Math.max(-3, Math.min(12, score)), reasons };
 }
 
-function countOccurrences(value: string, search: string): number {
-  let count = 0;
-  let index = value.indexOf(search);
-
-  while (index !== -1) {
-    count += 1;
-    index = value.indexOf(search, index + search.length);
-  }
-
-  return count;
+export function hasLongExperienceRequirement(descriptionText: string): boolean {
+  return LONG_EXPERIENCE_RE.test(descriptionText);
 }

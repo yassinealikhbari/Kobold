@@ -1,25 +1,41 @@
+import { createJobDiscovery } from '../api/_lib/job-discovery';
 import { sourceAdapters } from '../api/_lib/sources';
 
-let failures = 0;
+const discovery = createJobDiscovery({
+  adapters: sourceAdapters,
+  cacheTtlMs: 0,
+  sourceTimeoutMs: 20_000,
+});
+const result = await discovery.discoverJobs({ forceRefresh: true });
 
-for (const adapter of sourceAdapters) {
-  const startedAt = Date.now();
+for (const source of result.coverage) {
+  console.log(
+    [
+      `${source.source}: ${source.status}`,
+      `fetched ${source.fetched}`,
+      `parsed ${source.parsed}`,
+      `eligible ${source.eligible}`,
+      `returned ${source.returned}`,
+      `duplicates ${source.duplicates}`,
+      `${source.duration_ms} ms`,
+    ].join(' | '),
+  );
 
-  try {
-    const result = await adapter.fetchJobs();
-    const elapsed = Date.now() - startedAt;
-    console.log(`${adapter.name}: ${result.jobs.length} jobs (${elapsed} ms)`);
-    for (const warning of result.warnings ?? []) console.warn(`  warning: ${warning}`);
-  } catch (error) {
-    failures += 1;
-    const elapsed = Date.now() - startedAt;
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`${adapter.name}: ERROR after ${elapsed} ms`);
-    console.error(`  ${message}`);
-  }
+  const excluded = Object.entries(source.excluded)
+    .sort((left, right) => right[1] - left[1])
+    .map(([reason, count]) => `${reason}=${count}`)
+    .join(', ');
+  if (excluded) console.log(`  excluded: ${excluded}`);
+  for (const warning of source.warnings) console.warn(`  warning: ${warning}`);
+  if (source.error) console.error(`  error: ${source.error}`);
 }
 
-if (failures > 0) {
-  console.error(`${failures} source(s) failed`);
-  process.exitCode = 1;
-}
+const vueJobs = result.jobs.filter((job) => job.sources.includes('vuejobs'));
+const missingVueJobsCompany = vueJobs.filter((job) => !job.company || job.company === '(see listing)').length;
+const missingVueJobsLocation = vueJobs.filter((job) => !job.location).length;
+console.log(`total: ${result.jobs.length} eligible unique jobs`);
+console.log(
+  `vuejobs metadata: ${missingVueJobsCompany} missing company, ${missingVueJobsLocation} missing location among ${vueJobs.length} returned`,
+);
+
+if (result.coverage.some((source) => source.status === 'failed')) process.exitCode = 1;

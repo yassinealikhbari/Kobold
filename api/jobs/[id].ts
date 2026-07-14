@@ -18,7 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const job = await findLiveJob(id);
+    const source = typeof req.query.source === 'string' && req.query.source ? req.query.source : undefined;
+    const job = await findLiveJob(id, source);
     if (!job) {
       res.status(404).json({ error: 'This listing is no longer available from its source.' });
       return;

@@ -15,9 +15,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await requireAuth(req);
     const source = typeof req.query.source === 'string' && req.query.source ? req.query.source : undefined;
-    const { jobs, issues } = await fetchLiveJobs(source ? [source] : undefined);
+    const forceRefresh = req.query.refresh === '1' || req.query.refresh === 'true';
+    const { jobs, issues, coverage, fetched_at: fetchedAt, cache } = await fetchLiveJobs(
+      source ? [source] : undefined,
+      forceRefresh,
+    );
     const page = Math.max(1, Number(req.query.page ?? 1) || 1);
-    const sort = req.query.sort === 'posted' ? 'posted' : 'score';
+    const sort = req.query.sort === 'score' ? 'score' : 'posted';
     const filtered = jobs
       .filter((job) => !req.query.workplace || job.workplace === req.query.workplace)
       .filter((job) => !req.query.minScore || job.score >= Number(req.query.minScore))
@@ -39,7 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       pageSize: PAGE_SIZE,
       hasMore: from + PAGE_SIZE < filtered.length,
       issues,
-      fetchedAt: new Date().toISOString(),
+      coverage,
+      cache,
+      fetchedAt,
     });
   } catch (error) {
     sendError(res, error, { route: '/api/jobs', method: req.method });
