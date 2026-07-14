@@ -151,6 +151,14 @@ describe('language and freshness eligibility', () => {
     ).toMatchObject({ keep: false, reason: 'non-english-listing' });
   });
 
+  it('rejects a material non-English feed summary even when the title is English', () => {
+    expect(
+      evaluateLanguage(
+        'Nasze realne wyzwania i codziennosc. Rozwijamy globalna platforme w branzy iGaming. Nasze systemy obsluguja ogromny ruch na zywo, ponad sto milionow zapytan dziennie.',
+      ),
+    ).toMatchObject({ keep: false, reason: 'non-english-listing' });
+  });
+
   it('uses a strict 14-day freshness window and keeps unknown dates visible', () => {
     const now = new Date('2026-07-14T12:00:00.000Z');
     expect(evaluateFreshness('2026-06-29T11:59:59.000Z', now, 14)).toMatchObject({

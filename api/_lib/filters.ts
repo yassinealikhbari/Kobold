@@ -338,9 +338,13 @@ export function evaluateLanguage(descriptionText: string, declaredLanguage?: str
     return { keep: false, germanRequired: true, reason: 'german-language-listing' };
   }
 
-  const detected = tokens.length >= 30 ? franc(sample, { minLength: 80 }) : 'und';
+  // A short feed summary can still be long enough to establish that it is not English.
+  // Do not let an English title mask a non-English listing body.
+  const hasEnoughTextToAssessLanguage = tokens.length >= 12;
+  const detected = hasEnoughTextToAssessLanguage ? franc(sample, { minLength: 50 }) : 'und';
   const minimumEnglishSignals = Math.max(3, Math.floor(tokens.length * 0.02));
-  if (detected !== 'eng' && detected !== 'und' && englishCount < minimumEnglishSignals) {
+  const hasEnglishEvidence = englishCount >= minimumEnglishSignals;
+  if (detected !== 'eng' && !hasEnglishEvidence && (detected !== 'und' || hasEnoughTextToAssessLanguage)) {
     return {
       keep: false,
       germanRequired: detected === 'deu',
