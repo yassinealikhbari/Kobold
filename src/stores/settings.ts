@@ -13,7 +13,8 @@ export type AppSettings = {
 export type NotificationStatus = {
   tracked: number;
   pending: number;
-  lastNotifiedAt: string | null;
+  lastSentAt: string | null;
+  baselineAt: string | null;
   migrationRequired: boolean;
 };
 
@@ -31,7 +32,8 @@ export const useSettingsStore = defineStore('settings', {
     notificationStatus: {
       tracked: 0,
       pending: 0,
-      lastNotifiedAt: null,
+      lastSentAt: null,
+      baselineAt: null,
       migrationRequired: false,
     } as NotificationStatus,
     loading: false,

@@ -459,7 +459,8 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       notificationStatus: {
         tracked: 3,
         pending: 0,
-        lastNotifiedAt: hoursAgo(3),
+        lastSentAt: hoursAgo(3),
+        baselineAt: null,
         migrationRequired: false,
       },
       telegramConfigured: true,

@@ -99,12 +99,12 @@ async function getNotificationStatus() {
 
   if (trackedResult.error) {
     if (isMissingFingerprintTable(trackedResult.error)) {
-      return { tracked: 0, pending: 0, lastNotifiedAt: null, migrationRequired: true };
+      return { tracked: 0, pending: 0, lastSentAt: null, baselineAt: null, migrationRequired: true };
     }
     throw trackedResult.error;
   }
 
-  const [pendingResult, lastResult] = await Promise.all([
+  const [pendingResult, lastSentResult, baselineResult] = await Promise.all([
     getSupabase()
       .from('job_fingerprints')
       .select('fingerprint', { count: 'exact', head: true })
@@ -112,6 +112,15 @@ async function getNotificationStatus() {
     getSupabase()
       .from('job_fingerprints')
       .select('notified_at')
+      .not('notification_attempted_at', 'is', null)
+      .not('notified_at', 'is', null)
+      .order('notified_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    getSupabase()
+      .from('job_fingerprints')
+      .select('notified_at')
+      .is('notification_attempted_at', null)
       .not('notified_at', 'is', null)
       .order('notified_at', { ascending: false })
       .limit(1)
@@ -119,11 +128,13 @@ async function getNotificationStatus() {
   ]);
 
   if (pendingResult.error) throw pendingResult.error;
-  if (lastResult.error) throw lastResult.error;
+  if (lastSentResult.error) throw lastSentResult.error;
+  if (baselineResult.error) throw baselineResult.error;
   return {
     tracked: trackedResult.count ?? 0,
     pending: pendingResult.count ?? 0,
-    lastNotifiedAt: lastResult.data?.notified_at ?? null,
+    lastSentAt: lastSentResult.data?.notified_at ?? null,
+    baselineAt: baselineResult.data?.notified_at ?? null,
     migrationRequired: false,
   };
 }

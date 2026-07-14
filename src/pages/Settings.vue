@@ -44,9 +44,9 @@ onMounted(() => {
           <strong>{{ settings.notificationStatus.pending }}</strong>
         </div>
         <div>
-          <span>Last sent</span>
+          <span>Last digest</span>
           <strong>
-            {{ settings.notificationStatus.lastNotifiedAt ? absoluteDate(settings.notificationStatus.lastNotifiedAt) : 'Never' }}
+            {{ settings.notificationStatus.lastSentAt ? absoluteDate(settings.notificationStatus.lastSentAt) : 'Never' }}
           </strong>
         </div>
       </div>
@@ -56,6 +56,12 @@ onMounted(() => {
       </p>
       <p v-else-if="!settings.telegramConfigured" class="form-hint">
         Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel.
+      </p>
+      <p
+        v-if="settings.notificationStatus.baselineAt && !settings.notificationStatus.lastSentAt"
+        class="form-hint"
+      >
+        Existing target matches were baselined silently on {{ absoluteDate(settings.notificationStatus.baselineAt) }}.
       </p>
 
       <label class="check-field">
