@@ -3,124 +3,215 @@ import { computed, onMounted, ref } from 'vue';
 
 import FilterBar from '@/components/FilterBar.vue';
 import JobCard from '@/components/JobCard.vue';
-import SyncStatus from '@/components/SyncStatus.vue';
-import TagChip from '@/components/TagChip.vue';
-import { SOURCES, useJobsStore } from '@/stores/jobs';
+import { relativeDate } from '@/lib/dates';
+import { useJobsStore } from '@/stores/jobs';
+import type { LocalJobState } from '@/stores/jobs';
+import type { InboxView, Job, SourceCoverage } from '@/types/jobs';
+
+type BoardAction = {
+  kind: 'dismissed' | 'saved' | 'unsaved';
+  job: Job;
+  previousState: LocalJobState;
+};
 
 const jobs = useJobsStore();
-const refreshSelection = ref('all');
-let filterTimer: number | undefined;
+const coverageOpen = ref(false);
+const lastAction = ref<BoardAction | null>(null);
 
-const activeFilters = computed(() => {
-  const filters: string[] = [];
-  if (jobs.filters.q) filters.push(`Search: ${jobs.filters.q}`);
-  if (jobs.filters.workplace) filters.push(jobs.filters.workplace);
-  if (jobs.filters.source) filters.push(jobs.filters.source);
-  if (jobs.filters.minScore === 6) filters.push('Best matches');
-  if (jobs.filters.minScore === 3) filters.push('Good matches');
-  if (jobs.filters.showStale) filters.push('Including stale');
-  return filters;
+const tabs: Array<{ id: InboxView; label: string }> = [
+  { id: 'new', label: 'New' },
+  { id: 'all', label: 'All' },
+  { id: 'saved', label: 'Saved' },
+];
+
+const failedSources = computed(() => jobs.coverage.filter((source) => source.status === 'failed'));
+const warningSources = computed(() => jobs.coverage.filter((source) => source.status === 'degraded'));
+const sourceSummary = computed(() => {
+  if (failedSources.value.length) return `${failedSources.value.length} failed`;
+  if (warningSources.value.length) return `${warningSources.value.length} with warnings`;
+  return `${jobs.coverage.length} checked`;
 });
 
-function scheduleFetch() {
-  window.clearTimeout(filterTimer);
-  filterTimer = window.setTimeout(() => {
-    void jobs.fetchJobs();
-  }, 250);
+const resultLabel = computed(() => {
+  const shown = jobs.filteredJobs.length;
+  const total = jobs.currentViewTotal;
+  return jobs.activeFilterCount > 0 && shown !== total ? `${shown} of ${total} jobs` : `${shown} jobs`;
+});
+
+const emptyTitle = computed(() => {
+  if (jobs.jobs.length === 0) return 'No eligible jobs returned';
+  if (jobs.activeFilterCount > 0 && jobs.filteredJobs.length === 0) return 'Filters hide every job';
+  if (jobs.view === 'new') return 'Inbox reviewed';
+  if (jobs.view === 'saved') return 'No saved jobs';
+  return 'No jobs in this view';
+});
+
+const emptyBody = computed(() => {
+  if (jobs.jobs.length === 0) return 'Open source coverage to see what each feed returned and why listings were excluded.';
+  if (jobs.activeFilterCount > 0 && jobs.filteredJobs.length === 0) return 'Clear or loosen a filter to restore eligible jobs.';
+  if (jobs.view === 'new') return 'Every current listing has been reviewed. New jobs will appear here after the next refresh.';
+  if (jobs.view === 'saved') return 'Save a job from New or All to build a shortlist.';
+  return 'Refresh the live sources to check for new listings.';
+});
+
+function openJob(id: string) {
+  jobs.markSeen(id);
 }
 
-async function dismiss(id: string) {
-  await jobs.updateJobStatus(id, 'dismissed');
+function dismiss(id: string) {
+  const job = jobs.jobs.find((item) => item.id === id);
+  if (!job) return;
+  const previousState = jobs.localStateFor(id);
+  jobs.dismissJob(id);
+  lastAction.value = { kind: 'dismissed', job, previousState };
 }
 
-async function save(id: string) {
-  jobs.saveJobLocally(id);
+function save(id: string) {
+  const job = jobs.jobs.find((item) => item.id === id);
+  if (!job) return;
+  const previousState = jobs.localStateFor(id);
+  const saved = jobs.toggleSaved(id);
+  lastAction.value = { kind: saved ? 'saved' : 'unsaved', job, previousState };
 }
 
-function resetFilters() {
-  jobs.filters.q = '';
-  jobs.filters.workplace = '';
-  jobs.filters.source = '';
-  jobs.filters.minScore = -3;
-  jobs.filters.showStale = false;
-  jobs.filters.sort = 'score';
+function undoLastAction() {
+  const action = lastAction.value;
+  if (!action) return;
+  jobs.restoreLocalState(action.job.id, action.previousState);
+  lastAction.value = null;
 }
 
-function clearFilters() {
-  resetFilters();
+function topExclusion(source: SourceCoverage): string {
+  const first = Object.entries(source.excluded).sort((left, right) => right[1] - left[1])[0];
+  if (!first) return 'No exclusions';
+  return `${first[1]} ${first[0].replaceAll('-', ' ')}`;
+}
+
+function showAll() {
+  jobs.view = 'all';
+}
+
+onMounted(() => {
   void jobs.fetchJobs();
-}
-
-function applyQuickFilter(filter: 'best' | 'remote' | 'berlin' | 'all') {
-  resetFilters();
-  if (filter === 'best') jobs.filters.minScore = 6;
-  if (filter === 'remote') jobs.filters.workplace = 'remote';
-  if (filter === 'berlin') jobs.filters.q = 'Berlin';
-  void jobs.fetchJobs();
-}
-
-async function refresh() {
-  const selectedSources = refreshSelection.value === 'all' ? SOURCES : [refreshSelection.value];
-  await jobs.refreshSources(selectedSources);
-}
-
-onMounted(async () => {
-  await Promise.all([jobs.fetchJobs(), jobs.fetchSyncStatus()]);
 });
 </script>
 
 <template>
-  <section class="page">
+  <section class="page board-page">
     <header class="page-header board-header">
       <div>
-        <p class="eyebrow">Jobs</p>
+        <p class="eyebrow">Discovery inbox</p>
         <h1>Board</h1>
+        <p class="board-summary">
+          <strong>{{ jobs.total }}</strong> eligible jobs
+          <template v-if="jobs.coverage.length"> · {{ jobs.coverage.length }} sources</template>
+          <template v-if="jobs.fetchedAt"> · updated {{ relativeDate(jobs.fetchedAt) }}</template>
+        </p>
       </div>
 
-      <div class="header-actions">
-        <SyncStatus :runs="jobs.syncRuns" :refreshing="jobs.refreshing" :progress="jobs.refreshProgress" />
-        <select v-model="refreshSelection" aria-label="Refresh source">
-          <option value="all">All sources</option>
-          <option v-for="source in SOURCES" :key="source" :value="source">{{ source }}</option>
-        </select>
-        <button type="button" :disabled="jobs.refreshing" @click="refresh">
-          {{ jobs.refreshing ? 'Refreshing' : 'Refresh' }}
-        </button>
-      </div>
+      <button type="button" :disabled="jobs.refreshing" @click="jobs.refreshSources()">
+        {{ jobs.refreshing ? 'Refreshing' : 'Refresh sources' }}
+      </button>
     </header>
 
-    <div class="board-controls">
-      <FilterBar :filters="jobs.filters" :loading="jobs.loading" @change="scheduleFetch" />
-      <div class="quick-filters" aria-label="Quick filters">
-        <button type="button" class="text-button" @click="applyQuickFilter('best')">Best matches</button>
-        <button type="button" class="text-button" @click="applyQuickFilter('remote')">Remote</button>
-        <button type="button" class="text-button" @click="applyQuickFilter('berlin')">Berlin</button>
-        <button type="button" class="text-button" @click="clearFilters">Clear filters</button>
+    <nav class="inbox-tabs" aria-label="Job inbox views">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        type="button"
+        class="inbox-tab"
+        :class="{ 'is-active': jobs.view === tab.id }"
+        :aria-current="jobs.view === tab.id ? 'page' : undefined"
+        @click="jobs.view = tab.id"
+      >
+        {{ tab.label }}
+        <span>{{ jobs.inboxCounts[tab.id] }}</span>
+      </button>
+    </nav>
+
+    <FilterBar
+      :filters="jobs.filters"
+      :sources="jobs.availableSources"
+      :active-count="jobs.activeFilterCount"
+      @clear="jobs.clearFilters"
+    />
+
+    <section class="coverage-section" aria-label="Source coverage">
+      <button
+        type="button"
+        class="coverage-toggle"
+        :class="{ 'has-errors': failedSources.length }"
+        :aria-expanded="coverageOpen"
+        @click="coverageOpen = !coverageOpen"
+      >
+        <span>Source coverage</span>
+        <span>{{ sourceSummary }}</span>
+      </button>
+
+      <div v-if="coverageOpen" class="coverage-panel">
+        <div class="coverage-heading">
+          <strong>{{ jobs.total }} eligible unique jobs</strong>
+          <span>Filters never refetch sources</span>
+        </div>
+        <div class="coverage-table" role="table" aria-label="Source results">
+          <div class="coverage-row coverage-row--head" role="row">
+            <span role="columnheader">Source</span>
+            <span role="columnheader">Status</span>
+            <span role="columnheader">Fetched</span>
+            <span role="columnheader">Eligible</span>
+            <span role="columnheader">Top exclusion</span>
+          </div>
+          <div v-for="source in jobs.coverage" :key="source.source" class="coverage-row" role="row">
+            <strong role="cell">{{ source.source }}</strong>
+            <span role="cell" class="coverage-status" :class="`is-${source.status}`">{{ source.status }}</span>
+            <span role="cell">{{ source.fetched }}</span>
+            <span role="cell">{{ source.returned }}</span>
+            <span role="cell">{{ source.error || topExclusion(source) }}</span>
+          </div>
+        </div>
       </div>
-      <div v-if="activeFilters.length" class="active-filters" aria-label="Active filters">
-        <TagChip v-for="filter in activeFilters" :key="filter" :label="filter" tone="muted" />
-      </div>
-    </div>
+    </section>
 
     <p v-if="jobs.error" class="form-error">{{ jobs.error }}</p>
+    <p v-for="issue in jobs.issues" :key="`${issue.source}-${issue.error}`" class="source-issue" :class="`is-${issue.severity}`">
+      <strong>{{ issue.source }}</strong> {{ issue.error }}
+    </p>
 
-    <div v-if="jobs.loading" class="panel">Loading jobs...</div>
-    <div v-else-if="jobs.jobs.length === 0" class="panel empty-state">
-      <p>No matching jobs.</p>
-      <p v-if="jobs.syncRuns[0]" class="subtle">
-        Last run: {{ jobs.syncRuns[0].source }} found {{ jobs.syncRuns[0].found }},
-        matched {{ jobs.syncRuns[0].matched }}, added {{ jobs.syncRuns[0].inserted }} active
-        <template v-if="jobs.syncRuns[0].inserted_dismissed"> and {{ jobs.syncRuns[0].inserted_dismissed }} dismissed</template>.
-      </p>
-      <p v-if="jobs.syncRuns[0]?.error" class="form-error">{{ jobs.syncRuns[0].error }}</p>
-      <button type="button" class="empty-action" @click="clearFilters">Clear filters</button>
+    <div v-if="lastAction" class="action-feedback" role="status">
+      <span>
+        <strong>{{ lastAction.job.title }}</strong>
+        {{ lastAction.kind === 'dismissed' ? 'dismissed' : lastAction.kind === 'saved' ? 'saved' : 'removed from saved' }}.
+      </span>
+      <button type="button" class="text-button" @click="undoLastAction">Undo</button>
     </div>
-    <div v-else class="job-list">
-      <div class="result-count">{{ jobs.total }} matching jobs</div>
-      <JobCard v-for="job in jobs.jobs" :key="job.id" :job="job" @save="save" @dismiss="dismiss" />
-      <button v-if="jobs.hasMore" type="button" :disabled="jobs.loading" @click="jobs.fetchJobs({ append: true })">
-        {{ jobs.loading ? 'Loading' : 'Load more jobs' }}
-      </button>
+
+    <div v-if="jobs.loading" class="panel board-loading" aria-live="polite">Checking live sources...</div>
+    <div v-else-if="jobs.filteredJobs.length === 0" class="panel empty-state">
+      <h2>{{ emptyTitle }}</h2>
+      <p class="subtle">{{ emptyBody }}</p>
+      <div class="action-row">
+        <button v-if="jobs.activeFilterCount" type="button" @click="jobs.clearFilters">Clear filters</button>
+        <button v-else-if="jobs.view !== 'all' && jobs.jobs.length" type="button" @click="showAll">View all jobs</button>
+        <button v-else type="button" @click="jobs.refreshSources()">Refresh sources</button>
+      </div>
+    </div>
+    <div v-else class="job-list" :aria-busy="jobs.refreshing">
+      <div class="result-heading">
+        <span class="result-count">{{ resultLabel }}</span>
+        <span v-if="jobs.view === 'new'">Unreviewed</span>
+        <span v-else-if="jobs.view === 'saved'">Shortlist</span>
+        <span v-else>Newest first</span>
+      </div>
+      <JobCard
+        v-for="job in jobs.filteredJobs"
+        :key="job.id"
+        :job="job"
+        :saved="jobs.savedJobIds.includes(job.id)"
+        :is-new="!jobs.seenJobIds.includes(job.id)"
+        @open="openJob"
+        @save="save"
+        @dismiss="dismiss"
+      />
     </div>
   </section>
 </template>

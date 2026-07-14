@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify';
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 import ApplyPanel from '@/components/ApplyPanel.vue';
 import { absoluteDate } from '@/lib/dates';
 import { useJobsStore } from '@/stores/jobs';
 
 const route = useRoute();
+const router = useRouter();
 const jobs = useJobsStore();
-const applyPanel = ref<InstanceType<typeof ApplyPanel> | null>(null);
 const applicationOpened = ref(false);
 
 const sanitizedDescription = computed(() => {
@@ -25,6 +25,7 @@ const matchLevel = computed(() => {
 });
 
 const matchReasons = computed(() => jobs.selectedJob?.score_reasons ?? []);
+const isSaved = computed(() => Boolean(jobs.selectedJob && jobs.savedJobIds.includes(jobs.selectedJob.id)));
 
 const needsLocationVerification = computed(
   () => !jobs.selectedJob?.location || jobs.selectedJob.workplace === 'unknown',
@@ -46,6 +47,7 @@ const jobFacts = computed(() => {
 async function dismiss() {
   if (!jobs.selectedJob) return;
   await jobs.updateJobStatus(jobs.selectedJob.id, 'dismissed');
+  await router.push('/');
 }
 
 function openApplication() {
@@ -53,18 +55,20 @@ function openApplication() {
 }
 
 function saveForLater() {
-  void applyPanel.value?.saveForLater();
+  if (jobs.selectedJob) jobs.toggleSaved(jobs.selectedJob.id);
 }
 
 function refreshJob() {
   if (typeof route.params.id === 'string') {
-    void jobs.fetchJob(route.params.id);
+    const source = typeof route.query.source === 'string' ? route.query.source : undefined;
+    void jobs.fetchJob(route.params.id, source);
   }
 }
 
 onMounted(async () => {
   if (typeof route.params.id === 'string') {
-    await jobs.fetchJob(route.params.id);
+    const source = typeof route.query.source === 'string' ? route.query.source : undefined;
+    await jobs.fetchJob(route.params.id, source);
   }
 });
 </script>
@@ -93,7 +97,9 @@ onMounted(async () => {
         >
           Apply now
         </a>
-        <button type="button" class="job-action" @click="saveForLater">Save</button>
+        <button type="button" class="job-action" :class="{ 'is-selected': isSaved }" @click="saveForLater">
+          {{ isSaved ? 'Saved' : 'Save' }}
+        </button>
         <button type="button" class="job-action job-action--quiet" @click="dismiss">Dismiss</button>
       </div>
     </div>
@@ -144,10 +150,11 @@ onMounted(async () => {
 
       <aside class="job-prep">
         <ApplyPanel
-          ref="applyPanel"
           :job="jobs.selectedJob"
           :application-opened="applicationOpened"
+          :saved="isSaved"
           @application-change="refreshJob"
+          @save="saveForLater"
         />
       </aside>
     </div>

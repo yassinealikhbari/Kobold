@@ -1,6 +1,6 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
-import type { IngestRun, Job } from '@/types/jobs';
+import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
 
 type FixtureOptions = {
   method?: string;
@@ -17,13 +17,23 @@ const fixtureJobs: Job[] = [
     id: 'fixture-job-1',
     title: 'Senior Vue.js Engineer',
     company: 'Northstar Labs',
+    role_family: 'frontend',
     location: 'Berlin, Germany',
     workplace: 'hybrid',
     url: 'https://example.com/jobs/vue-engineer',
     apply_url: 'https://example.com/jobs/vue-engineer/apply',
     ats: 'greenhouse',
     sources: ['vuejobs'],
+    source_listings: [
+      {
+        source: 'vuejobs',
+        url: 'https://example.com/jobs/vue-engineer',
+        apply_url: 'https://example.com/jobs/vue-engineer/apply',
+      },
+    ],
     tags: ['Vue.js', 'TypeScript', 'Nuxt'],
+    technologies: ['vue', 'nuxt'],
+    employment_types: ['full-time'],
     description_html: '<p>Build a product with Vue.js, Nuxt, and TypeScript.</p>',
     description_text: 'Build a product with Vue.js, Nuxt, and TypeScript.',
     seniority: 'senior',
@@ -31,6 +41,7 @@ const fixtureJobs: Job[] = [
     salary_text: 'EUR 70,000 - 85,000',
     score: 8,
     score_reasons: ['Vue or Nuxt in title', 'Vue or Nuxt tag', 'Berlin location', 'TypeScript', 'Nuxt', 'Salary listed'],
+    eligibility_warnings: [],
     posted_at: hoursAgo(5),
     first_seen_at: hoursAgo(5),
     last_seen_at: hoursAgo(1),
@@ -41,13 +52,23 @@ const fixtureJobs: Job[] = [
     id: 'fixture-job-2',
     title: 'Frontend Engineer, Vue',
     company: 'Mosaic Cloud',
+    role_family: 'frontend',
     location: 'Remote - Europe',
     workplace: 'remote',
     url: 'https://example.com/jobs/frontend-engineer',
     apply_url: null,
     ats: null,
     sources: ['workingnomads', 'remoteok'],
+    source_listings: [
+      {
+        source: 'workingnomads',
+        url: 'https://example.com/jobs/frontend-engineer',
+        apply_url: null,
+      },
+    ],
     tags: ['Vue', 'TypeScript'],
+    technologies: ['vue'],
+    employment_types: ['full-time'],
     description_html: '<p>Help shape a remote-first developer platform.</p>',
     description_text: 'Help shape a remote-first developer platform.',
     seniority: 'mid',
@@ -55,6 +76,7 @@ const fixtureJobs: Job[] = [
     salary_text: null,
     score: 7,
     score_reasons: ['Vue or Nuxt in title', 'Vue or Nuxt tag', 'Remote Europe', 'TypeScript', 'Mid-level scope'],
+    eligibility_warnings: [],
     posted_at: hoursAgo(20),
     first_seen_at: hoursAgo(20),
     last_seen_at: hoursAgo(2),
@@ -65,13 +87,19 @@ const fixtureJobs: Job[] = [
     id: 'fixture-job-3',
     title: 'Vue Developer',
     company: 'Orbit Commerce',
+    role_family: 'frontend',
     location: 'Remote',
     workplace: 'remote',
     url: 'https://example.com/jobs/vue-developer',
     apply_url: null,
     ats: 'lever',
     sources: ['arbeitnow'],
+    source_listings: [
+      { source: 'arbeitnow', url: 'https://example.com/jobs/vue-developer', apply_url: null },
+    ],
     tags: ['Vue.js'],
+    technologies: ['vue'],
+    employment_types: ['unknown'],
     description_html: '<p>Maintain a Vue.js storefront.</p>',
     description_text: 'Maintain a Vue.js storefront.',
     seniority: 'unknown',
@@ -79,6 +107,7 @@ const fixtureJobs: Job[] = [
     salary_text: null,
     score: 2,
     score_reasons: ['Vue or Nuxt in title', 'Location needs verification'],
+    eligibility_warnings: ['remote-region-unverified', 'seniority-unverified', 'employment-type-unverified'],
     posted_at: hoursAgo(42),
     first_seen_at: hoursAgo(42),
     last_seen_at: hoursAgo(3),
@@ -89,13 +118,19 @@ const fixtureJobs: Job[] = [
     id: 'fixture-job-4',
     title: 'Vue.js Engineer',
     company: 'Archive Systems',
+    role_family: 'frontend',
     location: 'Berlin, Germany',
     workplace: 'onsite',
     url: 'https://example.com/jobs/archive-vue',
     apply_url: null,
     ats: null,
     sources: ['berlinstartupjobs'],
+    source_listings: [
+      { source: 'berlinstartupjobs', url: 'https://example.com/jobs/archive-vue', apply_url: null },
+    ],
     tags: ['Vue.js'],
+    technologies: ['vue'],
+    employment_types: ['full-time'],
     description_html: '<p>A previously listed Berlin role.</p>',
     description_text: 'A previously listed Berlin role.',
     seniority: 'mid',
@@ -103,6 +138,7 @@ const fixtureJobs: Job[] = [
     salary_text: null,
     score: 6,
     score_reasons: ['Vue or Nuxt in title', 'Vue or Nuxt tag', 'Berlin location', 'Mid-level scope'],
+    eligibility_warnings: [],
     posted_at: hoursAgo(220),
     first_seen_at: hoursAgo(220),
     last_seen_at: hoursAgo(220),
@@ -168,6 +204,48 @@ const fixtureRuns: IngestRun[] = [
   },
 ];
 
+const fixtureCoverage: SourceCoverage[] = [
+  {
+    source: 'vuejobs',
+    status: 'ok',
+    fetched: 236,
+    parsed: 236,
+    eligible: 1,
+    returned: 1,
+    duplicates: 0,
+    excluded: { 'onsite-outside-germany': 130 },
+    duration_ms: 412,
+    cache_hit: true,
+    warnings: [],
+  },
+  {
+    source: 'workingnomads',
+    status: 'ok',
+    fetched: 30,
+    parsed: 30,
+    eligible: 1,
+    returned: 1,
+    duplicates: 0,
+    excluded: { 'role-family-mismatch': 23 },
+    duration_ms: 522,
+    cache_hit: true,
+    warnings: [],
+  },
+  {
+    source: 'arbeitnow',
+    status: 'ok',
+    fetched: 500,
+    parsed: 500,
+    eligible: 1,
+    returned: 1,
+    duplicates: 0,
+    excluded: { 'role-family-mismatch': 343 },
+    duration_ms: 1_204,
+    cache_hit: true,
+    warnings: [],
+  },
+];
+
 export async function fixtureRequest<T>(path: string, options: FixtureOptions = {}): Promise<T> {
   const url = new URL(path, 'https://fixtures.local');
   const method = options.method?.toUpperCase() ?? 'GET';
@@ -178,7 +256,18 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
   if (url.pathname === '/auth/logout') return { authenticated: false } as T;
 
   if (url.pathname === '/jobs' && method === 'GET') {
-    return { jobs: filterJobs(url), total: filterJobs(url).length } as T;
+    const jobs = filterJobs(url);
+    return {
+      jobs,
+      total: jobs.length,
+      page: 1,
+      pageSize: 500,
+      hasMore: false,
+      issues: [],
+      coverage: fixtureCoverage,
+      fetchedAt: new Date().toISOString(),
+      cache: { hit: true, expires_at: null },
+    } as T;
   }
 
   if (url.pathname === '/jobs/sync-status') return { runs: fixtureRuns } as T;

@@ -1,58 +1,86 @@
 <script setup lang="ts">
-import { SOURCES, type JobFilters } from '@/stores/jobs';
+import type { JobFilters } from '@/stores/jobs';
 
 defineProps<{
   filters: JobFilters;
-  loading: boolean;
+  sources: string[];
+  activeCount: number;
 }>();
 
 const emit = defineEmits<{
-  change: [];
+  clear: [];
 }>();
 </script>
 
 <template>
-  <form class="filter-bar" @submit.prevent="emit('change')">
-    <input
-      v-model="filters.q"
-      type="search"
-      placeholder="Search jobs"
-      aria-label="Search jobs"
-      @input="emit('change')"
-    />
+  <form class="filter-bar" @submit.prevent>
+    <label class="filter-field filter-search">
+      <span>Search</span>
+      <input v-model="filters.q" type="search" placeholder="Title, company, location" />
+    </label>
 
-    <select v-model="filters.workplace" aria-label="Workplace" @change="emit('change')">
-      <option value="">Any workplace</option>
-      <option value="remote">Remote</option>
-      <option value="hybrid">Hybrid</option>
-      <option value="onsite">Onsite</option>
-      <option value="unknown">Unknown</option>
-    </select>
-
-    <select v-model="filters.source" aria-label="Source" @change="emit('change')">
-      <option value="">Any source</option>
-      <option v-for="source in SOURCES" :key="source" :value="source">{{ source }}</option>
-    </select>
-
-    <label class="inline-field">
-      <span>Match level</span>
-      <select v-model.number="filters.minScore" @change="emit('change')">
-        <option :value="6">Best matches</option>
-        <option :value="3">Good matches</option>
-        <option :value="-3">All eligible</option>
+    <label class="filter-field">
+      <span>Technology</span>
+      <select v-model="filters.technology">
+        <option value="">All technologies</option>
+        <option value="vue">Vue</option>
+        <option value="nuxt">Nuxt</option>
+        <option value="react">React</option>
       </select>
     </label>
 
-    <select v-model="filters.sort" aria-label="Sort" @change="emit('change')">
-      <option value="score">Score</option>
-      <option value="posted">Posted</option>
-    </select>
-
-    <label class="check-field">
-      <input v-model="filters.showStale" type="checkbox" @change="emit('change')" />
-      <span>Show stale</span>
+    <label class="filter-field">
+      <span>Location</span>
+      <select v-model="filters.locationScope">
+        <option value="">All eligible locations</option>
+        <option value="berlin">Berlin</option>
+        <option value="germany">Germany</option>
+        <option value="remote-europe">Remote Europe</option>
+        <option value="remote-worldwide">Remote worldwide</option>
+        <option value="unverified">Needs verification</option>
+      </select>
     </label>
 
-    <button type="submit" :disabled="loading">Apply</button>
+    <label class="filter-field">
+      <span>Work mode</span>
+      <select v-model="filters.workplace">
+        <option value="">Any mode</option>
+        <option value="remote">Remote</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="onsite">Onsite</option>
+        <option value="unknown">Unknown</option>
+      </select>
+    </label>
+
+    <label class="filter-field">
+      <span>Employment</span>
+      <select v-model="filters.employmentType">
+        <option value="">All eligible types</option>
+        <option value="full-time">Full-time</option>
+        <option value="contract">Contract</option>
+        <option value="freelance">Freelance</option>
+        <option value="unknown">Unverified</option>
+      </select>
+    </label>
+
+    <label class="filter-field">
+      <span>Source</span>
+      <select v-model="filters.source">
+        <option value="">All sources</option>
+        <option v-for="source in sources" :key="source" :value="source">{{ source }}</option>
+      </select>
+    </label>
+
+    <label class="filter-field">
+      <span>Order</span>
+      <select v-model="filters.sort">
+        <option value="posted">Newest first</option>
+        <option value="score">Match score</option>
+      </select>
+    </label>
+
+    <button type="button" class="filter-clear" :disabled="activeCount === 0" @click="emit('clear')">
+      Clear {{ activeCount || '' }}
+    </button>
   </form>
 </template>

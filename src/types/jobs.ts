@@ -1,16 +1,29 @@
 export type JobStatus = 'active' | 'stale' | 'expired' | 'dismissed';
+export type Technology = 'vue' | 'nuxt' | 'react';
+export type EmploymentType = 'full-time' | 'contract' | 'freelance' | 'unknown';
+export type InboxView = 'new' | 'all' | 'saved';
+
+export type SourceListing = {
+  source: string;
+  url: string;
+  apply_url: string | null;
+};
 
 export type Job = {
   id: string;
   title: string;
   company: string;
+  role_family: 'frontend' | 'ui' | 'product' | 'full-stack' | 'software' | null;
   location: string | null;
   workplace: 'remote' | 'hybrid' | 'onsite' | 'unknown';
   url: string;
   apply_url: string | null;
   ats: string | null;
   sources: string[];
+  source_listings: SourceListing[];
   tags: string[];
+  technologies: Technology[];
+  employment_types: EmploymentType[];
   description_html: string | null;
   description_text: string | null;
   seniority: string | null;
@@ -18,6 +31,7 @@ export type Job = {
   salary_text: string | null;
   score: number;
   score_reasons: string[];
+  eligibility_warnings: string[];
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;
@@ -26,6 +40,27 @@ export type Job = {
     id: string;
     status: string;
   } | null;
+};
+
+export type SourceCoverage = {
+  source: string;
+  status: 'ok' | 'degraded' | 'empty' | 'failed';
+  fetched: number;
+  parsed: number;
+  eligible: number;
+  returned: number;
+  duplicates: number;
+  excluded: Record<string, number>;
+  duration_ms: number;
+  cache_hit: boolean;
+  warnings: string[];
+  error?: string;
+};
+
+export type DiscoveryIssue = {
+  source: string;
+  error: string;
+  severity: 'warning' | 'error';
 };
 
 export type IngestRun = {

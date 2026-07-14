@@ -10,10 +10,12 @@ import type { Job } from '@/types/jobs';
 const props = defineProps<{
   job: Job;
   applicationOpened: boolean;
+  saved: boolean;
 }>();
 
 const emit = defineEmits<{
   applicationChange: [];
+  save: [];
 }>();
 
 const profile = useProfileStore();
@@ -22,7 +24,6 @@ const letter = ref('');
 const instructions = ref('');
 const generating = ref(false);
 const savingLetter = ref(false);
-const saving = ref(false);
 const error = ref('');
 const markingApplied = ref(false);
 
@@ -56,7 +57,7 @@ async function fetchApplication() {
 }
 
 async function saveForLater() {
-  error.value = 'Saved listings stay in this browser. Only submitted applications are added to Tracker.';
+  emit('save');
 }
 
 async function generateLetter() {
@@ -104,7 +105,6 @@ onMounted(async () => {
   await fetchApplication();
 });
 
-defineExpose({ saveForLater });
 </script>
 
 <template>
@@ -146,8 +146,8 @@ defineExpose({ saveForLater });
         >
           {{ markingApplied ? 'Updating' : 'I applied' }}
         </button>
-        <button type="button" class="job-action" :disabled="saving" @click="saveForLater">
-          {{ saving ? 'Saving' : 'Save for later' }}
+        <button type="button" class="job-action" :class="{ 'is-selected': saved }" @click="saveForLater">
+          {{ saved ? 'Saved' : 'Save for later' }}
         </button>
       </div>
     </div>

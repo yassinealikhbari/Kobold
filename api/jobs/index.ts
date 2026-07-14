@@ -3,7 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAuth, sendError } from '../_lib/auth.js';
 import { fetchLiveJobs } from '../_lib/live-jobs.js';
 
-const PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 500;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -21,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       forceRefresh,
     );
     const page = Math.max(1, Number(req.query.page ?? 1) || 1);
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(req.query.pageSize ?? DEFAULT_PAGE_SIZE) || DEFAULT_PAGE_SIZE));
     const sort = req.query.sort === 'score' ? 'score' : 'posted';
     const filtered = jobs
       .filter((job) => !req.query.workplace || job.workplace === req.query.workplace)
@@ -33,15 +35,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (sort === 'posted') return (right.posted_at ?? '').localeCompare(left.posted_at ?? '');
         return right.score - left.score || (right.posted_at ?? '').localeCompare(left.posted_at ?? '');
       });
-    const from = (page - 1) * PAGE_SIZE;
-    const pageJobs = filtered.slice(from, from + PAGE_SIZE);
+    const from = (page - 1) * pageSize;
+    const pageJobs = filtered.slice(from, from + pageSize);
 
     res.status(200).json({
       jobs: pageJobs,
       total: filtered.length,
       page,
-      pageSize: PAGE_SIZE,
-      hasMore: from + PAGE_SIZE < filtered.length,
+      pageSize,
+      hasMore: from + pageSize < filtered.length,
       issues,
       coverage,
       cache,
