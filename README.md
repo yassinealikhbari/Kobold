@@ -61,8 +61,8 @@ content before application.
 
 Add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, then enable the combined digest
 on the Settings page. The first scan creates a silent baseline. Later scans send
-one message containing new eligible jobs; failed sends and jobs that exceed one
-Telegram message remain pending for the next scan.
+one message containing new target-profile jobs; failed sends and jobs that
+exceed one Telegram message remain pending for the next scan.
 
 ## Listing Persistence
 
@@ -91,19 +91,25 @@ verification details.
 
 ## Cron Setup
 
-`vercel.json` defines the production schedule:
+GitHub Actions runs the production scan every three hours:
 
 ```text
-GET https://<app>.vercel.app/api/ingest?source=all
-Authorization: Bearer <CRON_SECRET>
+POST https://<app>.vercel.app/api/ingest?source=all
+x-cron-secret: <CRON_SECRET>
 ```
 
-Schedule: `0 */3 * * *` (every three hours).
+`.github/workflows/job-scan.yml` uses the repository secret
+`KOBOLD_CRON_SECRET`. It must match the production Vercel `CRON_SECRET`.
+`vercel.json` runs one daily fallback scan at 07:23 UTC because Vercel Hobby
+does not accept schedules that run more than once per day.
 
 An external scheduler can call the same endpoint with `POST` and
 `x-cron-secret: <CRON_SECRET>`. Configure one all-source job, not separate jobs
 per source. A failed source is recorded independently and does not suppress
 healthy-source results or the digest.
+
+See [`docs/OPERATIONS.md`](docs/OPERATIONS.md) for release, scheduler, migration,
+recovery, and rollback procedures.
 
 ## Verification
 
@@ -126,5 +132,6 @@ npm run test:sources
 4. Deploy.
 5. Log in with `APP_PASSWORD`.
 6. Apply migrations `006` and `007`, configure Telegram credentials, and enable alerts in Settings.
-7. Run `/api/ingest?source=all` once to establish the baseline.
-8. Run a Board refresh and confirm live listings and source coverage render.
+7. Add the matching `KOBOLD_CRON_SECRET` repository secret.
+8. Run the **Job scan** workflow once to establish the silent baseline.
+9. Run a Board refresh and confirm live listings and source coverage render.

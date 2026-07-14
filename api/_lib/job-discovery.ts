@@ -36,6 +36,7 @@ export type DiscoveredJob = {
   score: number;
   score_reasons: string[];
   eligibility_warnings: string[];
+  profile_eligible: boolean;
   fit: JobFit;
   posted_at: string | null;
   first_seen_at: string;
@@ -53,6 +54,7 @@ export type SourceCoverage = {
   returned: number;
   duplicates: number;
   excluded: Record<string, number>;
+  outside_profile: Record<string, number>;
   duration_ms: number;
   cache_hit: boolean;
   warnings: string[];
@@ -151,6 +153,7 @@ export function createJobDiscovery(options: DiscoveryFactoryOptions): JobDiscove
         returned: 0,
         duplicates: 0,
         excluded: {},
+        outside_profile: {},
         duration_ms: snapshot.durationMs,
         cache_hit: cacheHit,
         warnings: snapshot.result?.warnings ?? [],
@@ -176,7 +179,10 @@ export function createJobDiscovery(options: DiscoveryFactoryOptions): JobDiscove
           continue;
         }
 
-        sourceCoverage.eligible += 1;
+        if (normalized.job.profileEligible) sourceCoverage.eligible += 1;
+        for (const reason of normalized.job.profileMismatchReasons) {
+          increment(sourceCoverage.outside_profile, reason);
+        }
         const incoming = toDiscoveredJob(normalized.job, discoveryTime.toISOString());
         const existingId = normalized.job.mergeKeys.map((key) => identityIndex.get(key)).find(Boolean);
         if (existingId) {
@@ -293,6 +299,7 @@ function toDiscoveredJob(job: NormalizedJob, now: string): DiscoveredJob {
     score: job.score,
     score_reasons: job.scoreReasons,
     eligibility_warnings: job.eligibilityWarnings,
+    profile_eligible: job.profileEligible,
     fit: unratedJobFit(),
     posted_at: job.postedAt ?? null,
     first_seen_at: now,
@@ -309,6 +316,7 @@ function mergeJob(existing: DiscoveredJob, incoming: DiscoveredJob): void {
   existing.technologies = unique([...existing.technologies, ...incoming.technologies]);
   existing.employment_types = unique([...existing.employment_types, ...incoming.employment_types]);
   existing.eligibility_warnings = unique([...existing.eligibility_warnings, ...incoming.eligibility_warnings]);
+  existing.profile_eligible = existing.profile_eligible || incoming.profile_eligible;
   existing.score_reasons = unique([...existing.score_reasons, ...incoming.score_reasons]);
 
   if (isUnknownCompany(existing.company) && !isUnknownCompany(incoming.company)) existing.company = incoming.company;
@@ -360,6 +368,7 @@ function emptyCoverage(source: string, error: string): SourceCoverage {
     returned: 0,
     duplicates: 0,
     excluded: {},
+    outside_profile: {},
     duration_ms: 0,
     cache_hit: false,
     warnings: [],

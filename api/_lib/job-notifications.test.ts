@@ -116,6 +116,24 @@ describe('job notification service', () => {
     expect(repository.rows.get('first')?.notified_at).toBeTruthy();
     expect(repository.rows.get('second')?.notified_at).toBeNull();
   });
+
+  it('ignores visible listings that are outside the target profile', async () => {
+    const repository = new MemoryFingerprintRepository();
+    const sendDigest = vi.fn();
+    const process = createJobNotificationService({
+      repository,
+      notificationsEnabled: async () => true,
+      sendDigest,
+      now: () => new Date('2026-07-14T09:00:00Z'),
+    });
+
+    const result = await process([job('target'), job('outside', false)]);
+
+    expect(result).toMatchObject({ baselined: 1, sent: 0 });
+    expect(repository.rows.has('target')).toBe(true);
+    expect(repository.rows.has('outside')).toBe(false);
+    expect(sendDigest).not.toHaveBeenCalled();
+  });
 });
 
 describe('combined Telegram digest', () => {
@@ -140,7 +158,7 @@ describe('combined Telegram digest', () => {
   });
 });
 
-function job(id: string): DiscoveredJob {
+function job(id: string, profileEligible = true): DiscoveredJob {
   return {
     id,
     title: `Frontend Engineer ${id}`,
@@ -164,6 +182,7 @@ function job(id: string): DiscoveredJob {
     score: 0,
     score_reasons: [],
     eligibility_warnings: [],
+    profile_eligible: profileEligible,
     fit: {
       label: 'unrated',
       score: 0,

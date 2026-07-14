@@ -226,6 +226,9 @@ function experienceLabel(years: number): string {
 }
 
 function eligibilityRisk(warning: string): string | null {
+  if (warning.startsWith('outside-profile-')) {
+    return `Outside target profile: ${warning.slice('outside-profile-'.length).replaceAll('-', ' ')}`;
+  }
   const risks: Record<string, string> = {
     'remote-region-unverified': 'Confirm that remote work is available from Germany',
     'location-unverified': 'Confirm the work location',
@@ -236,6 +239,7 @@ function eligibilityRisk(warning: string): string | null {
     'asks-7-plus-years': 'Experience requirement may exceed the 5-6 year baseline',
     'technology-unclassified': 'Technology stack is not explicit',
     'german-mentioned-not-required': 'Confirm that German is not required',
+    'listing-language-unverified': 'Confirm that the listing is in English',
   };
   return risks[warning] ?? null;
 }

@@ -1,4 +1,5 @@
 import type { RawJob } from './sources/types.js';
+import { franc } from 'franc-min';
 
 export const VUE_RE = /\b(vue(?:\.js|js)?|nuxt(?:\.js|js)?)\b/i;
 
@@ -74,20 +75,45 @@ const GERMAN_WORDS = new Set([
   'zu',
 ]);
 const ENGLISH_WORDS = new Set([
+  'a',
+  'about',
+  'all',
   'and',
   'are',
   'as',
   'at',
+  'be',
+  'build',
+  'by',
+  'can',
+  'company',
+  'experience',
   'for',
   'from',
+  'have',
+  'help',
   'in',
+  'into',
   'is',
+  'it',
+  'job',
+  'new',
   'of',
+  'on',
+  'or',
   'our',
+  'product',
+  'role',
+  'team',
+  'that',
   'the',
+  'this',
   'to',
+  'us',
   'we',
+  'will',
   'with',
+  'work',
   'you',
   'your',
 ]);
@@ -280,7 +306,17 @@ export function evaluateFreshness(postedAt: string | undefined, now: Date, maxAg
   return { keep: true, postedAt: normalized };
 }
 
-export function evaluateLanguage(descriptionText: string): LanguageDecision {
+export function evaluateLanguage(descriptionText: string, declaredLanguage?: string): LanguageDecision {
+  const declared = declaredLanguage?.trim().toLowerCase() ?? '';
+  if (declared && !/^(?:en(?:[-_].*)?|eng|english)$/.test(declared)) {
+    const german = /^(?:de(?:[-_].*)?|deu|ger|german|deutsch)$/.test(declared);
+    return {
+      keep: false,
+      germanRequired: german,
+      reason: german ? 'german-language-listing' : 'non-english-listing',
+    };
+  }
+
   const sample = descriptionText.slice(0, 8_000);
   const sentences = sample.split(/(?<=[.!?\n])/);
   const explicitlyRequired = sentences.some((sentence) => {
@@ -302,10 +338,24 @@ export function evaluateLanguage(descriptionText: string): LanguageDecision {
     return { keep: false, germanRequired: true, reason: 'german-language-listing' };
   }
 
+  const detected = tokens.length >= 30 ? franc(sample, { minLength: 80 }) : 'und';
+  const minimumEnglishSignals = Math.max(3, Math.floor(tokens.length * 0.02));
+  if (detected !== 'eng' && detected !== 'und' && englishCount < minimumEnglishSignals) {
+    return {
+      keep: false,
+      germanRequired: detected === 'deu',
+      reason: detected === 'deu' ? 'german-language-listing' : 'non-english-listing',
+    };
+  }
+
   if (/\b(?:german|deutsch)\b/i.test(sample)) {
     return { keep: true, germanRequired: false, warnings: ['german-mentioned-not-required'] };
   }
-  return { keep: true, germanRequired: false };
+  return {
+    keep: true,
+    germanRequired: false,
+    warnings: sample && detected === 'und' ? ['listing-language-unverified'] : undefined,
+  };
 }
 
 export function isGermanRequired(descriptionText: string): boolean {

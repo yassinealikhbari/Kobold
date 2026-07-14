@@ -44,7 +44,8 @@ type JobNotificationDependencies = {
 
 export function createJobNotificationService(dependencies: JobNotificationDependencies) {
   return async function process(jobs: DiscoveredJob[]): Promise<JobNotificationResult> {
-    const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.id, job])).values());
+    const eligibleJobs = jobs.filter((job) => job.profile_eligible);
+    const uniqueJobs = Array.from(new Map(eligibleJobs.map((job) => [job.id, job])).values());
     const fingerprints = uniqueJobs.map((job) => job.id);
     const now = dependencies.now().toISOString();
     const baselineExists = await dependencies.repository.hasAny();
@@ -125,7 +126,9 @@ const productionRepository: FingerprintRepository = {
   },
   async upsert(records) {
     for (const batch of batches(records)) {
-      const { error } = await getSupabase().from('job_fingerprints').upsert(batch, { onConflict: 'fingerprint' });
+      const { error } = await getSupabase()
+        .from('job_fingerprints')
+        .upsert(batch, { onConflict: 'fingerprint', defaultToNull: false });
       if (error) throw error;
     }
   },

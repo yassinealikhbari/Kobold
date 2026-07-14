@@ -105,6 +105,7 @@ function job(patch: Partial<DiscoveredJob> = {}): DiscoveredJob {
     score: 8,
     score_reasons: [],
     eligibility_warnings: [],
+    profile_eligible: true,
     posted_at: '2026-07-14T08:00:00Z',
     first_seen_at: '2026-07-14T09:00:00Z',
     last_seen_at: '2026-07-14T09:00:00Z',

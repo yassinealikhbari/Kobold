@@ -54,6 +54,8 @@ export type NormalizedJob = {
   score: number;
   scoreReasons: string[];
   eligibilityWarnings: string[];
+  profileEligible: boolean;
+  profileMismatchReasons: string[];
   postedAt?: string;
   dedupeKey: string;
   mergeKeys: string[];
@@ -89,9 +91,7 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
   const seniority = evaluateSeniority(title);
   const locationDecision = evaluateLocation(enrichedRaw);
   const employment = evaluateEmploymentType(enrichedRaw);
-  const language = isGermanLanguageCode(raw.language)
-    ? { keep: false as const, germanRequired: true, reason: 'german-language-listing' }
-    : evaluateLanguage(descriptionText);
+  const language = evaluateLanguage(descriptionText, raw.language);
   const freshness = evaluateFreshness(raw.postedAt, now, maxAgeDays);
   const technologies = detectTechnologies({
     title,
@@ -111,6 +111,16 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
     salaryText: raw.salaryText,
     locationScoreAdjustment: locationDecision.scoreAdjustment,
   });
+  const profileDecisions = [role, seniority, employment, language, locationDecision, freshness];
+  const profileMismatchReasons = uniqueStrings(
+    profileDecisions.flatMap((decision) => (!decision.keep && decision.reason ? [decision.reason] : [])),
+  );
+  const trustedVueSource = source === 'vuejobs';
+  const visibleProfileWarnings = trustedVueSource
+    ? profileMismatchReasons
+        .filter((reason) => reason !== language.reason && reason !== freshness.reason)
+        .map((reason) => `outside-profile-${reason}`)
+    : [];
   const eligibilityWarnings = uniqueStrings([
     ...(role.warnings ?? []),
     ...(seniority.warnings ?? []),
@@ -120,6 +130,7 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
     ...(freshness.warnings ?? []),
     ...(hasLongExperienceRequirement(descriptionText) ? ['asks-7-plus-years'] : []),
     ...(technologies.length === 0 ? ['technology-unclassified'] : []),
+    ...visibleProfileWarnings,
   ]);
   const baseJob = {
     id: buildSourceJobId(source, url, applyUrl),
@@ -143,13 +154,15 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
     score: score.score,
     scoreReasons: score.reasons,
     eligibilityWarnings,
+    profileEligible: profileMismatchReasons.length === 0,
+    profileMismatchReasons,
     postedAt: freshness.postedAt,
     dedupeKey: buildDedupeKey(company, title, url),
     mergeKeys: buildMergeKeys({ company, title, location, url, applyUrl }),
     status: 'active',
   } satisfies NormalizedJob;
 
-  const exclusions = [role, seniority, employment, language, locationDecision, freshness];
+  const exclusions = trustedVueSource ? [language, freshness] : profileDecisions;
   const exclusion = exclusions.find((decision) => !decision.keep);
   if (exclusion) return { keep: false, reason: exclusion.reason ?? 'ineligible', job: baseJob };
 
@@ -258,10 +271,6 @@ function slug(value: string): string {
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
-}
-
-function isGermanLanguageCode(language?: string): boolean {
-  return /^(?:de(?:[-_].*)?|german|deutsch)$/i.test(language?.trim() ?? '');
 }
 
 function truncate(value: string | undefined, maxLength: number): string | undefined {

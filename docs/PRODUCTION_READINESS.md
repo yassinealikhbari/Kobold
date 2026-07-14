@@ -31,7 +31,9 @@ environment, database, or scheduling change.
 ## Ingest And Scheduling
 
 - [ ] The all-source scan reports every configured adapter and records failures independently.
-- [ ] One `source=all` cron runs every three hours with the correct secret.
+- [ ] The GitHub **Job scan** workflow runs `source=all` every three hours with
+  `KOBOLD_CRON_SECRET` matching Vercel's `CRON_SECRET`.
+- [ ] The daily Vercel Hobby-compatible fallback cron is registered.
 - [ ] The first scan establishes a silent fingerprint baseline.
 - [ ] A later scan sends one combined Telegram digest for new jobs only.
 - [ ] Settings shows a clear error for one intentionally failed source request.
@@ -67,5 +69,7 @@ environment, database, or scheduling change.
 - [ ] `npm run build:extension` passes and all four PNG icon sizes are present.
 - [ ] `npm run test:sources` has been reviewed; source-specific zero results are
   understood before release.
+- [ ] `npm audit --omit=dev` reports zero production vulnerabilities; any
+  remaining development-only advisory is recorded with its upstream package.
 - [ ] Vercel function logs contain no unexpected `api_error` events after smoke
   testing.

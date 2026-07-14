@@ -33,7 +33,11 @@ function warningLabel(warning: string): string {
     'asks-7-plus-years': 'Asks for 7+ years',
     'technology-unclassified': 'Technology unclassified',
     'german-mentioned-not-required': 'German mentioned',
+    'listing-language-unverified': 'Verify listing language',
   };
+  if (warning.startsWith('outside-profile-')) {
+    return `Outside target: ${warning.slice('outside-profile-'.length).replaceAll('-', ' ')}`;
+  }
   return labels[warning] ?? warning.replaceAll('-', ' ');
 }
 
@@ -68,7 +72,7 @@ const jobRoute = {
           <span v-if="isNew" class="job-state-label">New</span>
           <span class="fit-label" :class="`is-${job.fit.label}`">{{ fitLabel(job.fit.label) }}</span>
           <span class="eligibility-label">
-            {{ job.eligibility_warnings.length ? `${job.eligibility_warnings.length} to verify` : 'Eligible' }}
+            {{ job.profile_eligible ? 'Target match' : 'Outside target' }}
           </span>
         </div>
         <h2 class="job-title">{{ job.title }}</h2>

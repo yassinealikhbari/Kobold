@@ -143,6 +143,14 @@ describe('language and freshness eligibility', () => {
     });
   });
 
+  it('rejects a non-English listing without guessing from a short title', () => {
+    expect(
+      evaluateLanguage(
+        'Do naszego zespolu szukamy doswiadczonej osoby. Bedziesz rozwijac aplikacje internetowe, wspolpracowac z projektantami, dbac o jakosc kodu i wspierac innych programistow. Oferujemy elastyczne godziny pracy, prywatna opieke medyczna oraz mozliwosc rozwoju zawodowego w miedzynarodowym srodowisku.',
+      ),
+    ).toMatchObject({ keep: false, reason: 'non-english-listing' });
+  });
+
   it('uses a strict 14-day freshness window and keeps unknown dates visible', () => {
     const now = new Date('2026-07-14T12:00:00.000Z');
     expect(evaluateFreshness('2026-06-29T11:59:59.000Z', now, 14)).toMatchObject({
@@ -165,6 +173,53 @@ describe('technology, identity, and normalization', () => {
       'react',
     ]);
     expect(detectTechnologies({ title: 'Software Engineer', trustedVueSource: true })).toEqual(['vue']);
+  });
+
+  it('keeps fresh English VueJobs listings visible while marking profile mismatches', () => {
+    const normalized = normalizeRawJob(
+      {
+        title: 'Staff Data Scientist',
+        company: 'Example',
+        location: 'Toronto, Canada',
+        url: 'https://vuejobs.com/jobs/example-staff-data-scientist',
+        tags: ['vue'],
+        descriptionText:
+          'You will build analytical products with our engineering team and work with product partners to improve customer outcomes across the company.',
+        postedAt: '2026-07-13T00:00:00.000Z',
+      },
+      { source: 'vuejobs', now: new Date('2026-07-14T00:00:00.000Z') },
+    );
+
+    expect(normalized.keep).toBe(true);
+    expect(normalized.job).toMatchObject({
+      profileEligible: false,
+      eligibilityWarnings: expect.arrayContaining([
+        'outside-profile-seniority-out-of-scope',
+        'outside-profile-onsite-outside-germany',
+      ]),
+    });
+  });
+
+  it('still hides old or non-English VueJobs listings', () => {
+    const base = {
+      title: 'Frontend Engineer',
+      company: 'Example',
+      location: 'Remote',
+      url: 'https://vuejobs.com/jobs/example',
+      tags: ['vue'],
+    };
+    expect(
+      normalizeRawJob(
+        { ...base, postedAt: '2026-06-01T00:00:00.000Z', descriptionText: 'Build Vue products with our team.' },
+        { source: 'vuejobs', now: new Date('2026-07-14T00:00:00.000Z') },
+      ),
+    ).toMatchObject({ keep: false, reason: 'older-than-14-days' });
+    expect(
+      normalizeRawJob(
+        { ...base, language: 'fr', postedAt: '2026-07-13T00:00:00.000Z' },
+        { source: 'vuejobs', now: new Date('2026-07-14T00:00:00.000Z') },
+      ),
+    ).toMatchObject({ keep: false, reason: 'non-english-listing' });
   });
 
   it('canonicalizes tracking URLs into a stable source ID', () => {

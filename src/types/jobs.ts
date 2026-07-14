@@ -42,6 +42,7 @@ export type Job = {
   score: number;
   score_reasons: string[];
   eligibility_warnings: string[];
+  profile_eligible: boolean;
   fit: JobFit;
   posted_at: string | null;
   first_seen_at: string;
@@ -62,6 +63,7 @@ export type SourceCoverage = {
   returned: number;
   duplicates: number;
   excluded: Record<string, number>;
+  outside_profile: Record<string, number>;
   duration_ms: number;
   cache_hit: boolean;
   warnings: string[];

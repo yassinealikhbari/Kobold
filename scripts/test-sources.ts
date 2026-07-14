@@ -33,7 +33,8 @@ for (const source of result.coverage) {
 const vueJobs = result.jobs.filter((job) => job.sources.includes('vuejobs'));
 const missingVueJobsCompany = vueJobs.filter((job) => !job.company || job.company === '(see listing)').length;
 const missingVueJobsLocation = vueJobs.filter((job) => !job.location).length;
-console.log(`total: ${result.jobs.length} eligible unique jobs`);
+const profileEligible = result.jobs.filter((job) => job.profile_eligible).length;
+console.log(`total: ${result.jobs.length} visible unique jobs (${profileEligible} target matches)`);
 console.log(
   `vuejobs metadata: ${missingVueJobsCompany} missing company, ${missingVueJobsLocation} missing location among ${vueJobs.length} returned`,
 );

@@ -19,6 +19,7 @@ export type JobFilters = {
   technology: '' | Technology;
   employmentType: '' | EmploymentType;
   fitLabel: '' | Job['fit']['label'];
+  eligibility: '' | 'target' | 'outside';
   sort: 'posted' | 'fit';
 };
 
@@ -81,6 +82,7 @@ export const useJobsStore = defineStore('jobs', {
       technology: '',
       employmentType: '',
       fitLabel: '',
+      eligibility: '',
       sort: 'posted',
     } as JobFilters,
   }),
@@ -107,6 +109,7 @@ export const useJobsStore = defineStore('jobs', {
         state.filters.technology,
         state.filters.employmentType,
         state.filters.fitLabel,
+        state.filters.eligibility,
       ].filter(Boolean).length,
     filteredJobs: (state): Job[] => {
       const query = state.filters.q.trim().toLowerCase();
@@ -132,6 +135,11 @@ export const useJobsStore = defineStore('jobs', {
           (job) => !state.filters.employmentType || job.employment_types.includes(state.filters.employmentType),
         )
         .filter((job) => !state.filters.fitLabel || job.fit.label === state.filters.fitLabel)
+        .filter((job) => {
+          if (state.filters.eligibility === 'target') return job.profile_eligible;
+          if (state.filters.eligibility === 'outside') return !job.profile_eligible;
+          return true;
+        })
         .sort((left, right) => {
           if (state.filters.sort === 'fit') {
             return right.fit.score - left.fit.score || comparePostedAt(left, right);
@@ -162,7 +170,7 @@ export const useJobsStore = defineStore('jobs', {
         this.fetchedAt = response.fetchedAt ?? new Date().toISOString();
         this.cacheHit = response.cache?.hit ?? false;
         if (response.hasMore) {
-          this.error = `KOBOLD returned the first ${response.pageSize} eligible jobs. Narrow the search profile.`;
+          this.error = `KOBOLD returned the first ${response.pageSize} opportunities. Narrow the filters.`;
         }
         if (this.selectedJob) {
           this.selectedJob = response.jobs.find((job) => job.id === this.selectedJob?.id) ?? this.selectedJob;
@@ -248,6 +256,7 @@ export const useJobsStore = defineStore('jobs', {
       this.filters.technology = '';
       this.filters.employmentType = '';
       this.filters.fitLabel = '';
+      this.filters.eligibility = '';
       this.filters.sort = 'posted';
     },
     async refreshSources() {

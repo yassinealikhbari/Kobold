@@ -1,5 +1,11 @@
 # KOBOLD — Technical Specification & Build Plan
 
+> **Historical baseline:** This document describes KOBOLD's original build.
+> For current discovery rules, source coverage, persistence, notifications, and
+> release gates, use [`docs/GOLD_MINE_REBUILD_PLAN.md`](docs/GOLD_MINE_REBUILD_PLAN.md).
+> For deployment and scheduler procedures, use
+> [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+
 Personal job-hunting tool for Yassine Alikhbari. Aggregates full-time Vue.js roles (Berlin or remote-within-Europe), filters out German-required and junior listings, notifies via Telegram, and provides a prefill-and-confirm apply flow with LLM-generated cover letters and a kanban application tracker.
 
 **Locked decisions**

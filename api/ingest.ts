@@ -75,17 +75,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sources: source === 'all' ? undefined : [source],
       forceRefresh: true,
     });
+    const eligibleJobs = discovery.jobs.filter((job) => job.profile_eligible);
     stats = {
       ...emptyStats(),
       found: discovery.coverage.reduce((total, item) => total + item.fetched, 0),
-      matched: discovery.jobs.length,
+      matched: eligibleJobs.length,
     };
 
     let notification: JobNotificationResult | null = null;
     let notificationError: string | null = null;
     if (source === 'all') {
       try {
-        notification = await processJobNotifications(discovery.jobs);
+        notification = await processJobNotifications(eligibleJobs);
         notificationError = notification.error;
         stats.inserted = notification.newFingerprints;
         stats.insertedActive = notification.sent;
@@ -109,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       run: finalized,
       notification,
       coverage: discovery.coverage,
-      eligible: discovery.jobs.length,
+      eligible: eligibleJobs.length,
     });
   } catch (error) {
     if (run) {

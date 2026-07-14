@@ -1,5 +1,10 @@
 # Improvement Plan
 
+> **Superseded:** These phases document the first reliability pass and are kept
+> for historical context. The current product plan and completed release phases
+> are in [`GOLD_MINE_REBUILD_PLAN.md`](GOLD_MINE_REBUILD_PLAN.md); operational
+> procedures are in [`OPERATIONS.md`](OPERATIONS.md).
+
 ## Goal
 
 Make KOBOLD a dependable daily application workspace for finding,

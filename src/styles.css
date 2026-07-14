@@ -112,6 +112,7 @@ button:disabled {
   cursor: not-allowed;
   color: var(--muted);
   background: var(--accent-subtle);
+  box-shadow: none;
 }
 
 input,
@@ -126,6 +127,13 @@ textarea {
   box-shadow: 3px 3px 0 var(--ink);
   outline: 0;
   transition: transform 70ms ease-out, box-shadow 70ms ease-out;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 textarea {
@@ -443,6 +451,15 @@ form.panel {
   font-size: 12px;
 }
 
+.filter-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.filter-toggle {
+  display: none;
+}
+
 .filter-bar {
   display: grid;
   border: var(--border-strong) solid var(--ink);
@@ -568,7 +585,7 @@ form.panel {
 .coverage-row {
   display: grid;
   min-width: 720px;
-  grid-template-columns: minmax(150px, 1fr) 100px 80px 80px minmax(230px, 1.4fr);
+  grid-template-columns: minmax(140px, 1fr) 90px 70px 70px 70px minmax(230px, 1.4fr);
   border-bottom: var(--border-thin) solid var(--ink);
   font-size: 11px;
 }
@@ -1519,7 +1536,6 @@ form.panel {
   top: 24px;
   display: grid;
   gap: 16px;
-  box-shadow: var(--shadow);
 }
 
 .settings-row {
@@ -1698,6 +1714,30 @@ th {
   .metadata-list,
   .notification-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filter-toggle span:last-child {
+    display: grid;
+    min-width: 27px;
+    height: 27px;
+    place-items: center;
+    padding: 0 5px;
+    color: var(--surface);
+    background: var(--ink);
+    font-family: Inter, Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .filter-bar:not(.is-open) {
+    display: none;
   }
 
   .notification-metrics > div {

@@ -35,11 +35,12 @@ const sourceSummary = computed(() => {
 const resultLabel = computed(() => {
   const shown = jobs.filteredJobs.length;
   const total = jobs.currentViewTotal;
-  return jobs.activeFilterCount > 0 && shown !== total ? `${shown} of ${total} jobs` : `${shown} jobs`;
+  if (jobs.activeFilterCount > 0 && shown !== total) return `${shown} of ${total} ${jobWord(total)}`;
+  return `${shown} ${jobWord(shown)}`;
 });
 
 const emptyTitle = computed(() => {
-  if (jobs.jobs.length === 0) return 'No eligible jobs returned';
+  if (jobs.jobs.length === 0) return 'No opportunities returned';
   if (jobs.activeFilterCount > 0 && jobs.filteredJobs.length === 0) return 'Filters hide every job';
   if (jobs.view === 'new') return 'Inbox reviewed';
   if (jobs.view === 'saved') return 'No saved jobs';
@@ -48,7 +49,7 @@ const emptyTitle = computed(() => {
 
 const emptyBody = computed(() => {
   if (jobs.jobs.length === 0) return 'Open source coverage to see what each feed returned and why listings were excluded.';
-  if (jobs.activeFilterCount > 0 && jobs.filteredJobs.length === 0) return 'Clear or loosen a filter to restore eligible jobs.';
+  if (jobs.activeFilterCount > 0 && jobs.filteredJobs.length === 0) return 'Clear or loosen a filter to restore opportunities.';
   if (jobs.view === 'new') return 'Every current listing has been reviewed. New jobs will appear here after the next refresh.';
   if (jobs.view === 'saved') return 'Save a job from New or All to build a shortlist.';
   return 'Refresh the live sources to check for new listings.';
@@ -82,6 +83,8 @@ function undoLastAction() {
 }
 
 function topExclusion(source: SourceCoverage): string {
+  const outside = Object.entries(source.outside_profile).sort((left, right) => right[1] - left[1])[0];
+  if (outside) return `${outside[1]} visible outside target: ${outside[0].replaceAll('-', ' ')}`;
   const first = Object.entries(source.excluded).sort((left, right) => right[1] - left[1])[0];
   if (!first) return 'No exclusions';
   return `${first[1]} ${first[0].replaceAll('-', ' ')}`;
@@ -89,6 +92,10 @@ function topExclusion(source: SourceCoverage): string {
 
 function showAll() {
   jobs.view = 'all';
+}
+
+function jobWord(count: number): string {
+  return count === 1 ? 'job' : 'jobs';
 }
 
 onMounted(() => {
@@ -103,7 +110,7 @@ onMounted(() => {
         <p class="eyebrow">Discovery inbox</p>
         <h1>Board</h1>
         <p class="board-summary">
-          <strong>{{ jobs.total }}</strong> eligible jobs
+          <strong>{{ jobs.total }}</strong> {{ jobs.total === 1 ? 'opportunity' : 'opportunities' }}
           <template v-if="jobs.coverage.length"> · {{ jobs.coverage.length }} sources</template>
           <template v-if="jobs.fetchedAt"> · updated {{ relativeDate(jobs.fetchedAt) }}</template>
         </p>
@@ -150,7 +157,7 @@ onMounted(() => {
 
       <div v-if="coverageOpen" class="coverage-panel">
         <div class="coverage-heading">
-          <strong>{{ jobs.total }} eligible unique jobs</strong>
+          <strong>{{ jobs.total }} unique opportunities</strong>
           <span>Filters never refetch sources</span>
         </div>
         <div class="coverage-table" role="table" aria-label="Source results">
@@ -158,13 +165,15 @@ onMounted(() => {
             <span role="columnheader">Source</span>
             <span role="columnheader">Status</span>
             <span role="columnheader">Fetched</span>
-            <span role="columnheader">Eligible</span>
-            <span role="columnheader">Top exclusion</span>
+            <span role="columnheader">Target</span>
+            <span role="columnheader">Shown</span>
+            <span role="columnheader">Diagnostic</span>
           </div>
           <div v-for="source in jobs.coverage" :key="source.source" class="coverage-row" role="row">
             <strong role="cell">{{ source.source }}</strong>
             <span role="cell" class="coverage-status" :class="`is-${source.status}`">{{ source.status }}</span>
             <span role="cell">{{ source.fetched }}</span>
+            <span role="cell">{{ source.eligible }}</span>
             <span role="cell">{{ source.returned }}</span>
             <span role="cell">{{ source.error || topExclusion(source) }}</span>
           </div>

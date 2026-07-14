@@ -26,6 +26,9 @@ confirms an application.
 - Employment: full-time, contract, and freelance. Part-time roles are excluded.
 - Compensation: no minimum.
 - Freshness: listings older than 14 days are hidden by default.
+- VueJobs exception: every fresh English listing is visible. Listings outside
+  the target role, seniority, employment, or location profile are labeled and
+  filterable but do not enter Telegram alerts.
 - Ordering: newest first. Match quality is a label and optional secondary sort,
   never a visibility gate.
 - Industry/company exclusions: none.
@@ -47,7 +50,8 @@ confirms an application.
 ### Discovery Inbox
 
 - `New`: eligible listings not yet reviewed in this browser.
-- `All`: every eligible listing from the current 14-day window.
+- `All`: every visible listing from the current 14-day window, including
+  source-trusted VueJobs entries outside the target profile.
 - `Saved`: browser-local shortlist.
 - `Applied`: opens the persisted application tracker.
 - Default sort is newest first.
@@ -146,9 +150,10 @@ Every source diagnostic reports:
 
 ## Telegram Scan
 
-- External scheduler calls one all-source scan every three hours.
+- GitHub Actions calls one all-source scan every three hours, with one daily
+  Vercel Hobby-compatible fallback.
 - The scan compares deterministic IDs with `job_fingerprints`.
-- Only genuinely new eligible jobs enter one combined Telegram digest.
+- Only genuinely new target-profile jobs enter one combined Telegram digest.
 - The digest links directly to source listings.
 - Failed notification attempts remain retryable; successful fingerprints are
   marked with `notified_at`.
@@ -211,6 +216,8 @@ Every source diagnostic reports:
 ## Release Gates
 
 - VueJobs results retain company and location whenever present in the feed.
+- Every fresh English VueJobs listing is reachable and its target-profile state
+  is explicit.
 - No active source failure is silent in the Board.
 - Every eligible listing from the discovery result is reachable in All.
 - Default ordering is publication date descending.
