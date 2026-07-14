@@ -1,4 +1,3 @@
-import { VUE_RE } from '../filters.js';
 import { fetchJson } from './http.js';
 import type { RawJob, SourceAdapter } from './types.js';
 import { dateToIso, getArrayText, validRawJob } from './utils.js';
@@ -20,7 +19,6 @@ export const workingNomadsAdapter: SourceAdapter = {
     const response = await fetchJson<WorkingNomadsJob[]>('https://www.workingnomads.com/api/exposed_jobs/');
 
     return { jobs: response
-      .filter((item) => VUE_RE.test(`${item.title ?? ''} ${getArrayText(item.tags).join(' ')}`))
       .map((item): RawJob | null => {
         const tags = getArrayText(item.tags);
 

@@ -5,7 +5,7 @@ import { bestEffortBerlinStartupTitle, dateToIso, getText, parseRssItems, validR
 export const berlinStartupJobsAdapter: SourceAdapter = {
   name: 'berlinstartupjobs',
   async fetchJobs() {
-    const xml = await fetchText('https://berlinstartupjobs.com/?s=vue&feed=rss2');
+    const xml = await fetchText('https://berlinstartupjobs.com/engineering/feed/');
 
     return { jobs: parseRssItems(xml)
       .map((item): RawJob | null => {
@@ -19,7 +19,7 @@ export const berlinStartupJobsAdapter: SourceAdapter = {
           url: getText(item.link) ?? '',
           descriptionHtml: getText(item.description),
           postedAt: dateToIso(item.pubDate),
-          tags: ['vue'],
+          tags: ['engineering'],
         });
       })
       .filter(Boolean) as RawJob[] };

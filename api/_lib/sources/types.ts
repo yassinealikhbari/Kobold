@@ -11,6 +11,7 @@ export interface RawJob {
   postedAt?: string;
   salaryText?: string;
   jobTypes?: string[];
+  language?: string;
 }
 
 export interface SourceAdapter {

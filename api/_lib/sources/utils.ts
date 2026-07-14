@@ -11,9 +11,19 @@ const parser = new XMLParser({
 type RssItem = {
   title?: unknown;
   link?: unknown;
+  guid?: unknown;
   pubDate?: unknown;
   description?: unknown;
   'content:encoded'?: unknown;
+  category?: unknown;
+  region?: unknown;
+  country?: unknown;
+  state?: unknown;
+  skills?: unknown;
+  type?: unknown;
+  'dc:creator'?: unknown;
+  'himalayasJobs:companyName'?: unknown;
+  'himalayasJobs:locationRestriction'?: unknown;
 };
 
 export function parseRssItems(xml: string): RssItem[] {

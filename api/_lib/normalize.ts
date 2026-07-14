@@ -89,7 +89,9 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
   const seniority = evaluateSeniority(title);
   const locationDecision = evaluateLocation(enrichedRaw);
   const employment = evaluateEmploymentType(enrichedRaw);
-  const language = evaluateLanguage(descriptionText);
+  const language = isGermanLanguageCode(raw.language)
+    ? { keep: false as const, germanRequired: true, reason: 'german-language-listing' }
+    : evaluateLanguage(descriptionText);
   const freshness = evaluateFreshness(raw.postedAt, now, maxAgeDays);
   const technologies = detectTechnologies({
     title,
@@ -256,6 +258,10 @@ function slug(value: string): string {
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
+}
+
+function isGermanLanguageCode(language?: string): boolean {
+  return /^(?:de(?:[-_].*)?|german|deutsch)$/i.test(language?.trim() ?? '');
 }
 
 function truncate(value: string | undefined, maxLength: number): string | undefined {

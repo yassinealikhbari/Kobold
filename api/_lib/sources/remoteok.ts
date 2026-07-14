@@ -1,4 +1,3 @@
-import { VUE_RE } from '../filters.js';
 import { fetchJson } from './http.js';
 import type { RawJob, SourceAdapter } from './types.js';
 import { dateToIso, validRawJob } from './utils.js';
@@ -26,7 +25,6 @@ export const remoteOkAdapter: SourceAdapter = {
 
     return { jobs: response
       .slice(1)
-      .filter((item) => VUE_RE.test((item.tags ?? []).join(' ')))
       .map((item): RawJob | null =>
         validRawJob({
           title: item.position ?? '',

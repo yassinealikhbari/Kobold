@@ -1,4 +1,3 @@
-import { VUE_RE } from '../filters.js';
 import { fetchJson } from './http.js';
 import type { RawJob, SourceAdapter } from './types.js';
 import { truncateRawJob, unixSecondsToIso, validRawJob } from './utils.js';
@@ -33,7 +32,6 @@ export const arbeitnowAdapter: SourceAdapter = {
       for (const item of response.data ?? []) {
         const title = item.title?.trim() ?? '';
         const tags = item.tags ?? [];
-        if (!VUE_RE.test(`${title} ${tags.join(' ')}`)) continue;
 
         const raw = validRawJob({
           title,
