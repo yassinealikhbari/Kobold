@@ -9,10 +9,12 @@
     "dev:full": "npx vercel dev --listen 127.0.0.1:3001",
     "dev:vite": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:extension": "tsx scripts/build-extension.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:sources": "tsx scripts/test-sources.ts",
-    "typecheck": "vue-tsc -b"
+    "typecheck": "vue-tsc -b",
+    "typecheck:extension": "tsc --noEmit -p tsconfig.extension.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.3",
@@ -27,10 +29,12 @@
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
+    "@types/chrome": "^0.2.2",
     "@types/formidable": "^3.5.1",
     "@types/node": "^24.0.14",
     "@vercel/node": "^5.3.3",
     "@vue/tsconfig": "^0.9.1",
+    "esbuild": "^0.27.0",
     "tsx": "^4.23.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",

@@ -1,6 +1,7 @@
 # KOBOLD
 
-Personal Vue.js job-hunting tool for Berlin and remote-Europe full-time roles.
+Personal job discovery and application workspace for Berlin, Germany, and
+remote European or worldwide frontend opportunities.
 
 ## Local Setup
 
@@ -71,6 +72,23 @@ snapshot is saved only when you confirm **I applied**, so the Tracker remains
 available even after the source listing disappears. Saved and dismissed listings
 are kept only in the current browser.
 
+## Application Filler Extension
+
+KOBOLD includes a fill-only Chrome extension for common Greenhouse, Lever,
+Ashby, and generic application forms. It fills recognized empty fields from the
+KOBOLD profile, highlights manual-review fields, never overwrites existing
+answers, and never submits the form.
+
+Build and install it locally:
+
+```bash
+npm run build:extension
+```
+
+Load `extension/dist` as an unpacked extension. See
+[`docs/EXTENSION.md`](docs/EXTENSION.md) for installation, use, privacy, and
+verification details.
+
 ## Cron Setup
 
 `vercel.json` defines the production schedule:
@@ -92,7 +110,9 @@ healthy-source results or the digest.
 ```bash
 npm test
 npm run typecheck
+npm run typecheck:extension
 npm run build
+npm run build:extension
 npm run test:sources
 ```
 

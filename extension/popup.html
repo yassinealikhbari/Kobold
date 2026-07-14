@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOBOLD</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <span class="kicker">KOBOLD / 2026</span>
+      <h1>KOBOLD</h1>
+      <p>Application filler</p>
+    </header>
+
+    <main>
+      <section class="status-block" aria-live="polite">
+        <span>Profile</span>
+        <strong id="profile-status">Checking</strong>
+        <small id="sync-time"></small>
+      </section>
+
+      <button id="fill-button" class="primary" type="button">Fill current page</button>
+      <button id="sync-button" type="button">Sync profile</button>
+      <button id="clear-button" type="button" hidden>Clear local profile</button>
+      <a class="link-button" href="https://kobold-gamma.vercel.app/profile" target="_blank">Open profile</a>
+
+      <section id="result" class="result" aria-live="polite" hidden></section>
+    </main>
+  </body>
+</html>

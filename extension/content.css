@@ -1,0 +1,11 @@
+.kobold-filled {
+  outline: 3px solid #1f6b4f !important;
+  outline-offset: 2px !important;
+  background-color: #edf7f1 !important;
+}
+
+.kobold-review {
+  outline: 3px solid #ceb1be !important;
+  outline-offset: 2px !important;
+  background-color: #f1e4e8 !important;
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOBOLD extension fixture</title>
+    <link rel="stylesheet" href="../dist/content.css" />
+    <style>
+      body { max-width: 720px; margin: 30px auto; font-family: Arial, sans-serif; }
+      form, label { display: grid; gap: 8px; }
+      form { gap: 18px; }
+      input, textarea, select, button { min-height: 42px; padding: 8px; }
+    </style>
+    <script>
+      globalThis.chrome = {
+        runtime: {
+          onMessage: {
+            addListener(listener) {
+              globalThis.koboldFixtureListener = listener;
+            },
+          },
+        },
+      };
+    </script>
+    <script src="../dist/content.js"></script>
+  </head>
+  <body>
+    <button id="run-filler" type="button">Run fixture filler</button>
+    <output id="report"></output>
+    <form id="application-form">
+      <label>First name <input id="first_name" name="first_name" /></label>
+      <label>Last name <input id="last_name" name="last_name" /></label>
+      <label>Email <input id="email" name="email" type="email" /></label>
+      <label>Phone <input id="phone" name="phone" type="tel" /></label>
+      <label>LinkedIn <input id="linkedin" name="linkedin" type="url" /></label>
+      <label>Country
+        <select id="country" name="country">
+          <option value="">Select country</option>
+          <option value="DE">Germany</option>
+          <option value="FR">France</option>
+        </select>
+      </label>
+      <label>Current company <input id="company" name="company" value="Do not overwrite" /></label>
+      <label>Resume upload <input id="resume" name="resume" type="file" /></label>
+      <label>Cover letter <textarea id="cover-letter" name="cover-letter"></textarea></label>
+      <button id="submit-application" type="submit">Submit application</button>
+    </form>
+    <script>
+      document.getElementById('application-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        document.body.dataset.submitted = 'true';
+      });
+      document.getElementById('run-filler').addEventListener('click', () => {
+        globalThis.koboldFixtureListener(
+          {
+            type: 'KOBOLD_FILL',
+            profile: {
+              fullName: 'Yassine Alikhbari',
+              firstName: 'Yassine',
+              lastName: 'Alikhbari',
+              email: 'yassine@example.com',
+              phone: '+49 170 1234567',
+              location: 'Berlin, Germany',
+              country: 'Germany',
+              linkedin: 'https://linkedin.com/in/yassine',
+              github: 'https://github.com/yassine',
+              portfolio: 'https://yassine.dev',
+              summary: 'Frontend engineer focused on Vue and TypeScript.',
+              experienceYears: 5.5,
+              currentCompany: 'Example GmbH',
+              currentRole: 'Frontend Engineer',
+            },
+          },
+          {},
+          (report) => {
+            document.getElementById('report').textContent = JSON.stringify(report);
+          },
+        );
+      });
+    </script>
+  </body>
+</html>

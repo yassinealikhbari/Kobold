@@ -45,11 +45,26 @@ environment, database, or scheduling change.
   configuration error when it is not.
 - [ ] Telegram delivery has been tested when notifications are enabled.
 
+## Application Filler Extension
+
+- [ ] `extension/dist` was produced by `npm run build:extension` from the same
+  release commit.
+- [ ] Profile sync succeeds only while signed in to the production KOBOLD app.
+- [ ] Greenhouse, Lever, Ashby, and the generic fixture fill recognized empty
+  fields without replacing an existing answer.
+- [ ] CV, cover letter, compensation, authorization, visa, sponsorship, and
+  demographic fields remain manual.
+- [ ] Filling does not click a button, submit a form, or navigate away from the
+  application page.
+- [ ] Clearing the synced profile removes the locally stored extension data.
+
 ## Release Verification
 
 - [ ] `npm test` passes.
 - [ ] `npm run typecheck` passes.
+- [ ] `npm run typecheck:extension` passes.
 - [ ] `npm run build` passes.
+- [ ] `npm run build:extension` passes and all four PNG icon sizes are present.
 - [ ] `npm run test:sources` has been reviewed; source-specific zero results are
   understood before release.
 - [ ] Vercel function logs contain no unexpected `api_error` events after smoke
