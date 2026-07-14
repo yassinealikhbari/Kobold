@@ -79,7 +79,7 @@ onMounted(() => {
     <p v-if="applications.error" class="form-error">{{ applications.error }}</p>
 
     <div v-if="applications.loading" class="panel">Loading applications...</div>
-    <div v-else class="tracker-layout">
+    <div v-else class="tracker-layout" :class="{ 'has-selection': applications.selected }">
       <section class="kanban-board">
         <div
           v-for="status in APPLICATION_STATUSES"
