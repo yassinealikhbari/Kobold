@@ -1,4 +1,5 @@
 import type { EmploymentType, RoleFamily, Technology, Workplace } from './filters.js';
+import { unratedJobFit, type JobFit } from './job-fit.js';
 import { normalizeRawJob, type NormalizedJob } from './normalize.js';
 import { sourceAdapters } from './sources/index.js';
 import type { SourceAdapter, SourceFetchResult } from './sources/types.js';
@@ -35,6 +36,7 @@ export type DiscoveredJob = {
   score: number;
   score_reasons: string[];
   eligibility_warnings: string[];
+  fit: JobFit;
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;
@@ -291,6 +293,7 @@ function toDiscoveredJob(job: NormalizedJob, now: string): DiscoveredJob {
     score: job.score,
     score_reasons: job.scoreReasons,
     eligibility_warnings: job.eligibilityWarnings,
+    fit: unratedJobFit(),
     posted_at: job.postedAt ?? null,
     first_seen_at: now,
     last_seen_at: now,

@@ -17,6 +17,7 @@ function emptyProfile(): CandidateProfile {
     skills: [],
     languages: [],
     work_history: [],
+    experience_years: 5.5,
     cv_path: null,
     updated_at: new Date().toISOString(),
   };

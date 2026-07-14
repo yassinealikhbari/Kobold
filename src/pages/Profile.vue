@@ -79,6 +79,10 @@ onMounted(() => {
             <input v-model="profile.profile.location" type="text" />
           </label>
           <label>
+            Professional experience (years)
+            <input v-model.number="profile.profile.experience_years" type="number" min="0" max="60" step="0.5" />
+          </label>
+          <label>
             LinkedIn
             <input v-model="profile.profile.linkedin" type="url" />
           </label>

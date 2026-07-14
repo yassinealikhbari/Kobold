@@ -37,6 +37,16 @@ function warningLabel(warning: string): string {
   return labels[warning] ?? warning.replaceAll('-', ' ');
 }
 
+function fitLabel(label: Job['fit']['label']): string {
+  const labels: Record<Job['fit']['label'], string> = {
+    strong: 'Strong fit',
+    possible: 'Possible fit',
+    stretch: 'Stretch',
+    unrated: 'Profile needed',
+  };
+  return labels[label];
+}
+
 const jobRoute = {
   path: `/jobs/${props.job.id}`,
   query: props.job.sources[0] ? { source: props.job.sources[0] } : undefined,
@@ -56,6 +66,7 @@ const jobRoute = {
       <div class="job-heading">
         <div class="job-state-row">
           <span v-if="isNew" class="job-state-label">New</span>
+          <span class="fit-label" :class="`is-${job.fit.label}`">{{ fitLabel(job.fit.label) }}</span>
           <span class="eligibility-label">
             {{ job.eligibility_warnings.length ? `${job.eligibility_warnings.length} to verify` : 'Eligible' }}
           </span>
@@ -80,6 +91,10 @@ const jobRoute = {
       />
       <TagChip v-for="source in job.sources" :key="source" :label="source" tone="muted" />
     </div>
+
+    <p v-if="job.fit.reasons.length" class="job-fit-preview">
+      {{ job.fit.reasons.slice(0, 2).join(' · ') }}
+    </p>
 
     <p v-if="job.eligibility_warnings.length" class="job-warnings">
       {{ job.eligibility_warnings.slice(0, 3).map(warningLabel).join(' · ') }}

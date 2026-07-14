@@ -72,10 +72,21 @@ const emit = defineEmits<{
     </label>
 
     <label class="filter-field">
+      <span>Fit</span>
+      <select v-model="filters.fitLabel">
+        <option value="">Every fit</option>
+        <option value="strong">Strong</option>
+        <option value="possible">Possible</option>
+        <option value="stretch">Stretch</option>
+        <option value="unrated">Profile needed</option>
+      </select>
+    </label>
+
+    <label class="filter-field">
       <span>Order</span>
       <select v-model="filters.sort">
         <option value="posted">Newest first</option>
-        <option value="score">Match score</option>
+        <option value="fit">Best fit</option>
       </select>
     </label>
 

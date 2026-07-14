@@ -5,7 +5,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
 import { getSupabase } from '../_lib/db.js';
-import { getOrCreateProfile } from '../_lib/profile.js';
+import { getOrCreateProfile, normalizeProfile } from '../_lib/profile.js';
 
 export const config = {
   api: {
@@ -54,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error) throw error;
 
-      res.status(200).json({ profile: data });
+      res.status(200).json({ profile: normalizeProfile(data) });
       return;
     }
 

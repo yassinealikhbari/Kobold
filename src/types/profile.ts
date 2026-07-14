@@ -24,6 +24,7 @@ export type CandidateProfile = {
   skills: string[];
   languages: LanguageEntry[];
   work_history: WorkHistoryEntry[];
+  experience_years: number;
   cv_path: string | null;
   updated_at: string;
 };

@@ -18,7 +18,8 @@ export type JobFilters = {
   source: string;
   technology: '' | Technology;
   employmentType: '' | EmploymentType;
-  sort: 'posted' | 'score';
+  fitLabel: '' | Job['fit']['label'];
+  sort: 'posted' | 'fit';
 };
 
 export type LocalJobState = {
@@ -79,6 +80,7 @@ export const useJobsStore = defineStore('jobs', {
       source: '',
       technology: '',
       employmentType: '',
+      fitLabel: '',
       sort: 'posted',
     } as JobFilters,
   }),
@@ -104,6 +106,7 @@ export const useJobsStore = defineStore('jobs', {
         state.filters.source,
         state.filters.technology,
         state.filters.employmentType,
+        state.filters.fitLabel,
       ].filter(Boolean).length,
     filteredJobs: (state): Job[] => {
       const query = state.filters.q.trim().toLowerCase();
@@ -128,9 +131,10 @@ export const useJobsStore = defineStore('jobs', {
         .filter(
           (job) => !state.filters.employmentType || job.employment_types.includes(state.filters.employmentType),
         )
+        .filter((job) => !state.filters.fitLabel || job.fit.label === state.filters.fitLabel)
         .sort((left, right) => {
-          if (state.filters.sort === 'score') {
-            return right.score - left.score || comparePostedAt(left, right);
+          if (state.filters.sort === 'fit') {
+            return right.fit.score - left.fit.score || comparePostedAt(left, right);
           }
           return comparePostedAt(left, right);
         });
@@ -243,6 +247,7 @@ export const useJobsStore = defineStore('jobs', {
       this.filters.source = '';
       this.filters.technology = '';
       this.filters.employmentType = '';
+      this.filters.fitLabel = '';
       this.filters.sort = 'posted';
     },
     async refreshSources() {

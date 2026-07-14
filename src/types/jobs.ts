@@ -2,6 +2,16 @@ export type JobStatus = 'active' | 'stale' | 'expired' | 'dismissed';
 export type Technology = 'vue' | 'nuxt' | 'react';
 export type EmploymentType = 'full-time' | 'contract' | 'freelance' | 'unknown';
 export type InboxView = 'new' | 'all' | 'saved';
+export type FitLabel = 'strong' | 'possible' | 'stretch' | 'unrated';
+
+export type JobFit = {
+  label: FitLabel;
+  score: number;
+  reasons: string[];
+  risks: string[];
+  matched_skills: string[];
+  requested_skills: string[];
+};
 
 export type SourceListing = {
   source: string;
@@ -32,6 +42,7 @@ export type Job = {
   score: number;
   score_reasons: string[];
   eligibility_warnings: string[];
+  fit: JobFit;
   posted_at: string | null;
   first_seen_at: string;
   last_seen_at: string;

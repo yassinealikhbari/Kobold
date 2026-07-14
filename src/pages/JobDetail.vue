@@ -17,19 +17,19 @@ const sanitizedDescription = computed(() => {
   return html ? DOMPurify.sanitize(html) : '';
 });
 
-const matchLevel = computed(() => {
-  const score = jobs.selectedJob?.score ?? 0;
-  if (score >= 6) return 'Best match';
-  if (score >= 3) return 'Good match';
-  return 'Eligible match';
+const fitLabel = computed(() => {
+  const labels = {
+    strong: 'Strong fit',
+    possible: 'Possible fit',
+    stretch: 'Stretch role',
+    unrated: 'Profile needed',
+  } as const;
+  return labels[jobs.selectedJob?.fit.label ?? 'unrated'];
 });
 
-const matchReasons = computed(() => jobs.selectedJob?.score_reasons ?? []);
+const fitReasons = computed(() => jobs.selectedJob?.fit.reasons ?? []);
+const fitRisks = computed(() => jobs.selectedJob?.fit.risks ?? []);
 const isSaved = computed(() => Boolean(jobs.selectedJob && jobs.savedJobIds.includes(jobs.selectedJob.id)));
-
-const needsLocationVerification = computed(
-  () => !jobs.selectedJob?.location || jobs.selectedJob.workplace === 'unknown',
-);
 
 const jobFacts = computed(() => {
   const job = jobs.selectedJob;
@@ -39,6 +39,8 @@ const jobFacts = computed(() => {
     { label: 'Location', value: job.location },
     { label: 'Workplace', value: job.workplace === 'unknown' ? null : job.workplace },
     { label: 'Seniority', value: job.seniority },
+    { label: 'Technologies', value: job.technologies.join(', ') || null },
+    { label: 'Employment', value: job.employment_types.join(', ') || null },
     { label: 'Salary', value: job.salary_text },
     { label: 'Posted', value: absoluteDate(job.posted_at ?? job.first_seen_at) },
   ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
@@ -84,7 +86,7 @@ onMounted(async () => {
 
     <div class="decision-bar" aria-label="Job actions">
       <div class="match-summary">
-        <strong>{{ matchLevel }} · {{ jobs.selectedJob.score }}/12</strong>
+        <strong>{{ fitLabel }}</strong>
         <span>{{ jobs.selectedJob.location || 'Verify location before applying' }}</span>
       </div>
       <div class="action-row">
@@ -110,19 +112,28 @@ onMounted(async () => {
           <div class="section-heading">
             <div>
               <p class="eyebrow">Match review</p>
-              <h2>Why this job</h2>
+              <h2>Fit evidence</h2>
             </div>
-            <span class="match-score">{{ jobs.selectedJob.score }}/12</span>
+            <span class="fit-badge" :class="`is-${jobs.selectedJob.fit.label}`">{{ fitLabel }}</span>
           </div>
 
-          <ul v-if="matchReasons.length" class="match-reasons">
-            <li v-for="reason in matchReasons" :key="reason">{{ reason }}</li>
-          </ul>
-          <p v-else class="subtle">Score details will be available after this listing is refreshed.</p>
-
-          <p v-if="needsLocationVerification" class="form-hint">
-            Verify the work location in the original listing before you apply.
+          <p v-if="jobs.selectedJob.fit.label === 'unrated'" class="form-hint">
+            Complete your skills, summary, and work history in <RouterLink to="/profile">Profile</RouterLink>.
           </p>
+          <div v-else class="fit-evidence-grid">
+            <div>
+              <h3>Evidence</h3>
+              <ul class="match-reasons">
+                <li v-for="reason in fitReasons" :key="reason">{{ reason }}</li>
+              </ul>
+            </div>
+            <div v-if="fitRisks.length">
+              <h3>Verify</h3>
+              <ul class="match-reasons fit-risks">
+                <li v-for="risk in fitRisks" :key="risk">{{ risk }}</li>
+              </ul>
+            </div>
+          </div>
         </section>
 
         <section v-if="jobFacts.length" class="panel facts-panel">

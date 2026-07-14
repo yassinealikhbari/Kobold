@@ -44,7 +44,7 @@ No variable should be prefixed with `VITE_`.
 
 1. Create a Supabase project.
 2. Run each SQL file in `supabase/migrations/` in filename order in the SQL editor.
-   The current app requires migrations `002` through `006`; do not deploy API
+   The current app requires migrations `002` through `007`; do not deploy API
    changes before applying them.
 3. Create a private Storage bucket named `documents`.
 4. Put `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel project environment variables.
@@ -105,6 +105,6 @@ npm run test:sources
 3. Add all environment variables from `.env.example`.
 4. Deploy.
 5. Log in with `APP_PASSWORD`.
-6. Apply migration `006`, configure Telegram credentials, and enable alerts in Settings.
+6. Apply migrations `006` and `007`, configure Telegram credentials, and enable alerts in Settings.
 7. Run `/api/ingest?source=all` once to establish the baseline.
 8. Run a Board refresh and confirm live listings and source coverage render.

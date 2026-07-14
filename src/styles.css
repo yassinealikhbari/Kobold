@@ -815,16 +815,34 @@ form.panel {
   display: flex;
   min-height: 20px;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .job-state-label,
+.fit-label,
 .eligibility-label {
   color: var(--muted);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+.fit-label.is-strong {
+  color: #1f6b4f;
+}
+
+.fit-label.is-possible {
+  color: #805622;
+}
+
+.fit-label.is-stretch {
+  color: var(--danger);
+}
+
+.fit-label.is-unrated {
+  color: var(--muted);
 }
 
 .job-state-label {
@@ -855,6 +873,13 @@ form.panel {
   border-left: 4px solid var(--accent);
   padding-left: 8px;
   color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.job-fit-preview {
+  margin: -2px 0 0;
+  color: var(--ink);
   font-size: 12px;
   font-weight: 600;
 }
@@ -1102,6 +1127,44 @@ form.panel {
   font-size: 22px;
   letter-spacing: 0.8px;
   line-height: 1;
+}
+
+.fit-badge {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.fit-badge.is-strong {
+  color: #1f6b4f;
+}
+
+.fit-badge.is-possible {
+  color: #805622;
+}
+
+.fit-badge.is-stretch {
+  color: var(--danger);
+}
+
+.fit-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.fit-evidence-grid > div {
+  min-width: 0;
+}
+
+.fit-evidence-grid h3 {
+  margin-bottom: 12px;
+}
+
+.fit-risks li::marker {
+  color: var(--danger);
 }
 
 .match-reasons {
@@ -1630,6 +1693,7 @@ th {
   }
 
   .filter-bar,
+  .fit-evidence-grid,
   .form-grid,
   .metadata-list,
   .notification-metrics {
