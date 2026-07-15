@@ -49,14 +49,16 @@ describe('role and seniority eligibility', () => {
     });
   });
 
-  it('treats developer titles on VueJobs as frontend while preserving hard exclusions', () => {
-    expect(evaluateRole('Vue.js Developer', { trustedVueSource: true })).toMatchObject({
-      keep: true,
-      family: 'frontend',
-    });
-    expect(evaluateRole('Lead Vue.js Developer', { trustedVueSource: true })).toMatchObject({
+  it('treats Vue and Nuxt titles as frontend while preserving hard exclusions', () => {
+    expect(evaluateRole('Vue.js Developer')).toMatchObject({ keep: true, family: 'frontend' });
+    expect(evaluateRole('Nuxt Engineer')).toMatchObject({ keep: true, family: 'frontend' });
+    expect(evaluateRole('Lead Vue.js Developer')).toMatchObject({
       keep: false,
       reason: 'seniority-out-of-scope',
+    });
+    expect(evaluateRole('Senior Security Engineer')).toMatchObject({
+      keep: false,
+      reason: 'role-family-mismatch',
     });
   });
 });
@@ -183,7 +185,7 @@ describe('technology, identity, and normalization', () => {
     expect(detectTechnologies({ title: 'Software Engineer', trustedVueSource: true })).toEqual(['vue']);
   });
 
-  it('keeps fresh English VueJobs listings visible while marking profile mismatches', () => {
+  it('applies profile filters to VueJobs listings like any other source', () => {
     const normalized = normalizeRawJob(
       {
         title: 'Staff Data Scientist',
@@ -198,14 +200,7 @@ describe('technology, identity, and normalization', () => {
       { source: 'vuejobs', now: new Date('2026-07-14T00:00:00.000Z') },
     );
 
-    expect(normalized.keep).toBe(true);
-    expect(normalized.job).toMatchObject({
-      profileEligible: false,
-      eligibilityWarnings: expect.arrayContaining([
-        'outside-profile-seniority-out-of-scope',
-        'outside-profile-onsite-outside-germany',
-      ]),
-    });
+    expect(normalized).toMatchObject({ keep: false, reason: 'seniority-out-of-scope' });
   });
 
   it('still hides old or non-English VueJobs listings', () => {

@@ -157,11 +157,11 @@ export type LanguageDecision = FilterDecision & {
   germanRequired: boolean;
 };
 
-export function evaluateRole(title: string, options: { trustedVueSource?: boolean } = {}): RoleDecision {
+export function evaluateRole(title: string): RoleDecision {
   if (JUNIOR_RE.test(title)) return { keep: false, family: null, reason: 'junior-or-entry-level' };
   if (OUT_OF_SCOPE_LEVEL_RE.test(title)) return { keep: false, family: null, reason: 'seniority-out-of-scope' };
 
-  const family = detectRoleFamily(title, options);
+  const family = detectRoleFamily(title);
   if (!family) return { keep: false, family: null, reason: 'role-family-mismatch' };
   if (MOBILE_RE.test(title)) return { keep: false, family, reason: 'discipline-out-of-scope' };
 
@@ -173,13 +173,13 @@ export function evaluateRole(title: string, options: { trustedVueSource?: boolea
   return { keep: true, family };
 }
 
-export function detectRoleFamily(title: string, options: { trustedVueSource?: boolean } = {}): RoleFamily | null {
+export function detectRoleFamily(title: string): RoleFamily | null {
   if (FRONTEND_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'frontend';
   if (UI_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'ui';
   if (PRODUCT_ENGINEER_RE.test(title)) return 'product';
   if (FULL_STACK_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'full-stack';
+  if (VUE_RE.test(title) && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'frontend';
   if (SOFTWARE_ENGINEER_RE.test(title)) return 'software';
-  if (options.trustedVueSource && ENGINEER_OR_DEVELOPER_RE.test(title)) return 'frontend';
   return null;
 }
 

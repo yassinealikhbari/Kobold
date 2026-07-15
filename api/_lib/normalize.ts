@@ -87,7 +87,7 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
   const descriptionText = truncate(raw.descriptionText ?? stripHtml(raw.descriptionHtml ?? ''), 20_000) ?? '';
   const tags = uniqueStrings(raw.tags ?? []);
   const enrichedRaw = { ...raw, title, location, tags, descriptionText };
-  const role = evaluateRole(title, { trustedVueSource: source === 'vuejobs' });
+  const role = evaluateRole(title);
   const seniority = evaluateSeniority(title);
   const locationDecision = evaluateLocation(enrichedRaw);
   const employment = evaluateEmploymentType(enrichedRaw);
@@ -115,12 +115,6 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
   const profileMismatchReasons = uniqueStrings(
     profileDecisions.flatMap((decision) => (!decision.keep && decision.reason ? [decision.reason] : [])),
   );
-  const trustedVueSource = source === 'vuejobs';
-  const visibleProfileWarnings = trustedVueSource
-    ? profileMismatchReasons
-        .filter((reason) => reason !== language.reason && reason !== freshness.reason)
-        .map((reason) => `outside-profile-${reason}`)
-    : [];
   const eligibilityWarnings = uniqueStrings([
     ...(role.warnings ?? []),
     ...(seniority.warnings ?? []),
@@ -130,7 +124,6 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
     ...(freshness.warnings ?? []),
     ...(hasLongExperienceRequirement(descriptionText) ? ['asks-7-plus-years'] : []),
     ...(technologies.length === 0 ? ['technology-unclassified'] : []),
-    ...visibleProfileWarnings,
   ]);
   const baseJob = {
     id: buildSourceJobId(source, url, applyUrl),
@@ -162,8 +155,7 @@ export function normalizeRawJob(raw: RawJob, options: NormalizeOptions = {}): No
     status: 'active',
   } satisfies NormalizedJob;
 
-  const exclusions = trustedVueSource ? [language, freshness] : profileDecisions;
-  const exclusion = exclusions.find((decision) => !decision.keep);
+  const exclusion = profileDecisions.find((decision) => !decision.keep);
   if (exclusion) return { keep: false, reason: exclusion.reason ?? 'ineligible', job: baseJob };
 
   return { keep: true, job: baseJob };

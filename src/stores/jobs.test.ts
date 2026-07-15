@@ -1,7 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Job } from '@/types/jobs';
+
 import { useJobsStore } from './jobs';
+
+const job = (id: string) => ({ id, fit: { score: 0 }, posted_at: null }) as Job;
 
 const storage = new Map<string, string>();
 
@@ -39,5 +43,36 @@ describe('jobs local inbox state', () => {
 
     jobs.restoreLocalState('job-2', previousState);
     expect(jobs.localStateFor('job-2')).toEqual({ seen: true, saved: true, dismissed: false });
+  });
+});
+
+describe('new inbox view', () => {
+  beforeEach(() => {
+    storage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('keeps an opened job in New until it is dismissed', () => {
+    const jobs = useJobsStore();
+    jobs.jobs = [job('job-1'), job('job-2')];
+
+    jobs.markSeen('job-1');
+    expect(jobs.filteredJobs.map((item) => item.id)).toEqual(['job-1', 'job-2']);
+    expect(jobs.inboxCounts.new).toBe(2);
+
+    jobs.dismissJob('job-1');
+    expect(jobs.filteredJobs.map((item) => item.id)).toEqual(['job-2']);
+    expect(jobs.inboxCounts.new).toBe(1);
+  });
+
+  it('drops reviewed jobs from New once sources are refreshed', async () => {
+    const jobs = useJobsStore();
+    jobs.jobs = [job('job-1'), job('job-2')];
+    jobs.markSeen('job-1');
+
+    vi.spyOn(jobs, 'fetchJobs').mockResolvedValue(undefined);
+    await jobs.refreshSources();
+
+    expect(jobs.filteredJobs.map((item) => item.id)).toEqual(['job-2']);
   });
 });

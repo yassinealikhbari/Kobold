@@ -74,6 +74,8 @@ export const useJobsStore = defineStore('jobs', {
     dismissedJobIds: readStoredIds('kobold-dismissed-jobs'),
     savedJobIds: readStoredIds('kobold-saved-jobs'),
     seenJobIds: readStoredIds('kobold-seen-jobs'),
+    // Jobs opened during this session stay in New until an explicit refresh.
+    stickyNewJobIds: [] as string[],
     filters: {
       q: '',
       workplace: '',
@@ -94,7 +96,7 @@ export const useJobsStore = defineStore('jobs', {
     inboxCounts: (state): Record<InboxView, number> => {
       const active = state.jobs.filter((job) => !state.dismissedJobIds.includes(job.id));
       return {
-        new: active.filter((job) => !state.seenJobIds.includes(job.id)).length,
+        new: active.filter((job) => isNewJob(state, job)).length,
         all: active.length,
         saved: active.filter((job) => state.savedJobIds.includes(job.id)).length,
       };
@@ -204,6 +206,7 @@ export const useJobsStore = defineStore('jobs', {
     markSeen(id: string) {
       if (this.seenJobIds.includes(id)) return;
       this.seenJobIds.push(id);
+      if (!this.stickyNewJobIds.includes(id)) this.stickyNewJobIds.push(id);
       storeIds('kobold-seen-jobs', this.seenJobIds);
     },
     localStateFor(id: string): LocalJobState {
@@ -239,6 +242,7 @@ export const useJobsStore = defineStore('jobs', {
     dismissJob(id: string) {
       this.markSeen(id);
       if (!this.dismissedJobIds.includes(id)) this.dismissedJobIds.push(id);
+      this.stickyNewJobIds = this.stickyNewJobIds.filter((stickyId) => stickyId !== id);
       this.savedJobIds = this.savedJobIds.filter((savedId) => savedId !== id);
       storeIds('kobold-dismissed-jobs', this.dismissedJobIds);
       storeIds('kobold-saved-jobs', this.savedJobIds);
@@ -262,6 +266,7 @@ export const useJobsStore = defineStore('jobs', {
     async refreshSources() {
       this.refreshing = true;
       try {
+        this.stickyNewJobIds = [];
         await this.fetchJobs({ forceRefresh: true });
       } finally {
         this.refreshing = false;
@@ -270,17 +275,24 @@ export const useJobsStore = defineStore('jobs', {
   },
 });
 
-function jobsForView(state: {
+type InboxState = {
   jobs: Job[];
   view: InboxView;
   dismissedJobIds: string[];
   savedJobIds: string[];
   seenJobIds: string[];
-}): Job[] {
+  stickyNewJobIds: string[];
+};
+
+function jobsForView(state: InboxState): Job[] {
   const active = state.jobs.filter((job) => !state.dismissedJobIds.includes(job.id));
-  if (state.view === 'new') return active.filter((job) => !state.seenJobIds.includes(job.id));
+  if (state.view === 'new') return active.filter((job) => isNewJob(state, job));
   if (state.view === 'saved') return active.filter((job) => state.savedJobIds.includes(job.id));
   return active;
+}
+
+function isNewJob(state: Pick<InboxState, 'seenJobIds' | 'stickyNewJobIds'>, job: Job): boolean {
+  return !state.seenJobIds.includes(job.id) || state.stickyNewJobIds.includes(job.id);
 }
 
 function matchesLocationScope(job: Job, scope: JobFilters['locationScope']): boolean {
