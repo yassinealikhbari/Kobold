@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:sources": "tsx scripts/test-sources.ts",
+    "harvest:ats": "tsx scripts/harvest-ats-boards.ts",
     "typecheck": "vue-tsc -b",
     "typecheck:extension": "tsc --noEmit -p tsconfig.extension.json"
   },
