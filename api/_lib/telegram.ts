@@ -31,21 +31,29 @@ export async function sendCombinedJobDigest(jobs: TelegramJob[]): Promise<Telegr
   if (!token || !chatId) return { sentCount: 0, error: 'Telegram credentials are not configured' };
 
   const digest = buildCombinedTelegramDigest(jobs);
+  const error = await sendTelegramText(digest.text);
+  if (error) return { sentCount: 0, error };
+  return { sentCount: digest.included, error: null };
+}
+
+export async function sendTelegramText(text: string): Promise<string | null> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return 'Telegram credentials are not configured';
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: digest.text,
+      text: text.slice(0, TELEGRAM_MESSAGE_LIMIT),
       disable_web_page_preview: true,
     }),
   });
 
   if (!response.ok) {
-    return { sentCount: 0, error: `Telegram send failed with ${response.status}` };
+    return `Telegram send failed with ${response.status}`;
   }
-
-  return { sentCount: digest.included, error: null };
+  return null;
 }
 
 export function buildCombinedTelegramDigest(

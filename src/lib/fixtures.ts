@@ -1,7 +1,7 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
 import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
-import type { Contact, Opportunity, Organization } from '@/types/crm';
+import type { Activity, Contact, Opportunity, Organization, Task } from '@/types/crm';
 
 type FixtureOptions = {
   method?: string;
@@ -116,6 +116,37 @@ const fixtureOpportunities: Opportunity[] = [
       archived_at: null,
     },
     open_task_count: 0,
+  },
+];
+
+const fixtureActivities: Activity[] = [
+  {
+    id: '66666666-6666-4666-8666-666666666666',
+    subject_type: 'opportunity',
+    subject_id: fixtureOpportunities[0]!.id,
+    subject_label: fixtureOpportunities[0]!.title,
+    subject_path: `/freelance/opportunities/${fixtureOpportunities[0]!.id}`,
+    kind: 'stage_change',
+    body: 'Stage changed from lead to contacted',
+    metadata: { from: 'lead', to: 'contacted' },
+    occurred_at: hoursAgo(96),
+    created_at: hoursAgo(96),
+  },
+];
+
+const fixtureTasks: Task[] = [
+  {
+    id: '77777777-7777-4777-8777-777777777777',
+    subject_type: 'opportunity',
+    subject_id: fixtureOpportunities[0]!.id,
+    subject_label: fixtureOpportunities[0]!.title,
+    subject_path: `/freelance/opportunities/${fixtureOpportunities[0]!.id}`,
+    mode: 'freelance',
+    title: 'Follow up after the first conversation',
+    due_at: new Date(now.getTime() + 24 * 60 * 60_000).toISOString(),
+    done_at: null,
+    created_at: hoursAgo(4),
+    updated_at: hoursAgo(4),
   },
 ];
 
@@ -365,6 +396,8 @@ let fixtureSettings = {
   id: 1 as const,
   notify_enabled: false,
   min_score_notify: 3,
+  task_notify_enabled: false,
+  task_digest_sent_on: null as string | null,
   updated_at: hoursAgo(1),
 };
 
@@ -606,6 +639,7 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       return { opportunity: withFixtureOpportunityOrganization(opportunity) } as T;
     }
     if (method === 'PATCH') {
+      const previousStage = opportunity.stage;
       const stageChanged = typeof body.stage === 'string' && body.stage !== opportunity.stage;
       Object.assign(opportunity, body, {
         lost_reason: body.stage && body.stage !== 'lost' ? null : body.lost_reason ?? opportunity.lost_reason,
@@ -613,12 +647,70 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
         stage_changed_at: stageChanged ? new Date().toISOString() : opportunity.stage_changed_at,
         updated_at: new Date().toISOString(),
       });
+      if (stageChanged) recordFixtureStageChange('opportunity', opportunity.id, previousStage, opportunity.stage);
       return { opportunity: withFixtureOpportunityOrganization(opportunity) } as T;
     }
     if (method === 'DELETE') {
       opportunity.archived_at = new Date().toISOString();
       opportunity.updated_at = opportunity.archived_at;
       return { opportunity: { ...opportunity } } as T;
+    }
+  }
+
+  if (url.pathname === '/activities') {
+    if (method === 'GET') {
+      const subjectType = url.searchParams.get('subject_type');
+      const subjectId = url.searchParams.get('subject_id');
+      return {
+        activities: fixtureActivities
+          .filter((item) => item.subject_type === subjectType && item.subject_id === subjectId)
+          .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
+          .map((item) => ({ ...item })),
+      } as T;
+    }
+    if (method === 'POST') return { activity: createFixtureActivity(body) } as T;
+  }
+
+  if (url.pathname.startsWith('/activities/') && method === 'DELETE') {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const index = fixtureActivities.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error('Fixture activity not found');
+    fixtureActivities.splice(index, 1);
+    return { ok: true } as T;
+  }
+
+  if (url.pathname === '/tasks') {
+    if (method === 'GET') {
+      const scope = url.searchParams.get('scope') ?? 'all';
+      const subjectType = url.searchParams.get('subject_type');
+      const subjectId = url.searchParams.get('subject_id');
+      return {
+        tasks: fixtureTasks
+          .filter((item) => !item.done_at)
+          .filter((item) => !subjectType || item.subject_type === subjectType)
+          .filter((item) => !subjectId || item.subject_id === subjectId)
+          .filter((item) => fixtureTaskInScope(item, scope))
+          .sort((left, right) => (left.due_at ?? 'z').localeCompare(right.due_at ?? 'z'))
+          .map((item) => ({ ...item })),
+      } as T;
+    }
+    if (method === 'POST') return { task: createFixtureTask(body) } as T;
+  }
+
+  if (url.pathname.startsWith('/tasks/')) {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const task = fixtureTasks.find((item) => item.id === id);
+    if (!task) throw new Error('Fixture task not found');
+    if (method === 'PATCH') {
+      if (typeof body.done === 'boolean') task.done_at = body.done ? new Date().toISOString() : null;
+      if (typeof body.title === 'string') task.title = body.title;
+      if (typeof body.due_at === 'string' || body.due_at === null) task.due_at = body.due_at;
+      task.updated_at = new Date().toISOString();
+      return { task: { ...task } } as T;
+    }
+    if (method === 'DELETE') {
+      fixtureTasks.splice(fixtureTasks.indexOf(task), 1);
+      return { ok: true } as T;
     }
   }
 
@@ -633,6 +725,7 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
     }
 
     if (method === 'PATCH') {
+      const previousStatus = application.status;
       if (isApplicationStatus(body.status)) {
         application.status = body.status;
         application.status_changed_at = new Date().toISOString();
@@ -641,6 +734,9 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       if (typeof body.notes === 'string') application.notes = body.notes;
       if (typeof body.cover_letter === 'string') application.cover_letter = body.cover_letter;
       application.updated_at = new Date().toISOString();
+      if (previousStatus !== application.status) {
+        recordFixtureStageChange('application', application.id, previousStatus, application.status);
+      }
       return { application } as T;
     }
   }
@@ -841,6 +937,107 @@ function withFixtureOpportunityOrganization(opportunity: Opportunity): Opportuni
         }
       : null,
   };
+}
+
+function createFixtureActivity(body: Record<string, unknown>): Activity {
+  const timestamp = new Date().toISOString();
+  const subject = fixtureSubject(String(body.subject_type), String(body.subject_id));
+  const activity: Activity = {
+    id: `${String(fixtureActivities.length + 40).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    subject_type: subject.type,
+    subject_id: subject.id,
+    subject_label: subject.label,
+    subject_path: subject.path,
+    kind:
+      body.kind === 'visit' || body.kind === 'dm' || body.kind === 'email' ||
+      body.kind === 'call' || body.kind === 'meeting' || body.kind === 'proposal'
+        ? body.kind
+        : 'note',
+    body: typeof body.body === 'string' && body.body ? body.body : null,
+    metadata: {},
+    occurred_at: timestamp,
+    created_at: timestamp,
+  };
+  fixtureActivities.unshift(activity);
+  return { ...activity };
+}
+
+function createFixtureTask(body: Record<string, unknown>): Task {
+  const timestamp = new Date().toISOString();
+  const subject = body.subject_type && body.subject_id
+    ? fixtureSubject(String(body.subject_type), String(body.subject_id))
+    : null;
+  const task: Task = {
+    id: `${String(fixtureTasks.length + 50).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    subject_type: subject?.type ?? null,
+    subject_id: subject?.id ?? null,
+    subject_label: subject?.label ?? null,
+    subject_path: subject?.path ?? null,
+    mode: subject?.mode ?? null,
+    title: String(body.title ?? '').trim(),
+    due_at: typeof body.due_at === 'string' ? body.due_at : null,
+    done_at: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  fixtureTasks.push(task);
+  return { ...task };
+}
+
+function fixtureSubject(type: string, id: string): {
+  type: Activity['subject_type'];
+  id: string;
+  label: string;
+  path: string;
+  mode: Task['mode'];
+} {
+  if (type === 'organization') {
+    const item = fixtureOrganizations.find((value) => value.id === id);
+    return { type, id, label: item?.name ?? 'Organization', path: `/freelance/organizations/${id}`, mode: 'freelance' };
+  }
+  if (type === 'contact') {
+    const item = fixtureContacts.find((value) => value.id === id);
+    return { type, id, label: item?.full_name ?? 'Contact', path: `/freelance/contacts/${id}`, mode: 'freelance' };
+  }
+  if (type === 'application') {
+    const item = fixtureApplications.find((value) => value.id === id);
+    return { type, id, label: item?.job_snapshot.title ?? 'Application', path: '/tracker', mode: 'jobs' };
+  }
+  const item = fixtureOpportunities.find((value) => value.id === id);
+  return { type: 'opportunity', id, label: item?.title ?? 'Opportunity', path: `/freelance/opportunities/${id}`, mode: 'freelance' };
+}
+
+function fixtureTaskInScope(task: Task, scope: string): boolean {
+  if (scope === 'all' || !task.due_at) return scope === 'all';
+  const due = new Date(task.due_at).getTime();
+  const current = Date.now();
+  const endToday = new Date();
+  endToday.setHours(23, 59, 59, 999);
+  if (scope === 'overdue') return due < current;
+  if (scope === 'today') return due >= current && due <= endToday.getTime();
+  return due > endToday.getTime() && due <= endToday.getTime() + 7 * 86_400_000;
+}
+
+function recordFixtureStageChange(
+  type: 'opportunity' | 'application',
+  id: string,
+  from: string,
+  to: string,
+) {
+  const timestamp = new Date().toISOString();
+  const subject = fixtureSubject(type, id);
+  fixtureActivities.unshift({
+    id: `${String(fixtureActivities.length + 60).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    subject_type: type,
+    subject_id: id,
+    subject_label: subject.label,
+    subject_path: subject.path,
+    kind: 'stage_change',
+    body: `${type === 'application' ? 'Status' : 'Stage'} changed from ${from} to ${to}`,
+    metadata: { from, to },
+    occurred_at: timestamp,
+    created_at: timestamp,
+  });
 }
 
 function serializeJob(job: Job): Job {

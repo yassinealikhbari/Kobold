@@ -78,6 +78,7 @@ Freelance
   /freelance/organizations    List + filters (district, status, language, has-website)
   /freelance/organizations/:id  Detail: contacts, opportunities, activity, tasks, audit
   /freelance/contacts         List
+  /freelance/contacts/:id     Detail: activity, tasks, and contact fields
   /freelance/opportunities/:id  Detail: stage, value, activity, tasks, linked docs
 
 Job Hunt  (existing routes, unchanged)

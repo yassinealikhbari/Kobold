@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 
+import ActivityTimeline from '@/components/ActivityTimeline.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { absoluteDate } from '@/lib/dates';
 import {
@@ -134,5 +135,10 @@ onMounted(() => {
         </div>
       </aside>
     </div>
+    <ActivityTimeline
+      v-if="applications.selected"
+      subject-type="application"
+      :subject-id="applications.selected.id"
+    />
   </section>
 </template>

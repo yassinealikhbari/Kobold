@@ -7,6 +7,8 @@ export type AppSettings = {
   id: 1;
   notify_enabled: boolean;
   min_score_notify: number;
+  task_notify_enabled: boolean;
+  task_digest_sent_on: string | null;
   updated_at: string;
 };
 
@@ -24,6 +26,8 @@ export const useSettingsStore = defineStore('settings', {
       id: 1,
       notify_enabled: false,
       min_score_notify: 3,
+      task_notify_enabled: false,
+      task_digest_sent_on: null,
       updated_at: new Date().toISOString(),
     } as AppSettings,
     runs: [] as IngestRun[],

@@ -45,7 +45,7 @@ No variable should be prefixed with `VITE_`.
 
 1. Create a Supabase project.
 2. Run each SQL file in `supabase/migrations/` in filename order in the SQL editor.
-   The current app requires migrations `002` through `009`; do not deploy API
+   The current app requires migrations `002` through `010`; do not deploy API
    changes before applying them.
 3. Create a private Storage bucket named `documents`.
 4. Put `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel project environment variables.
@@ -63,6 +63,11 @@ Add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, then enable the combined digest
 on the Settings page. The first scan creates a silent baseline. Later scans send
 one message containing new target-profile jobs; failed sends and jobs that
 exceed one Telegram message remain pending for the next scan.
+
+The shared Today view can also send one Berlin-morning Telegram digest for
+overdue and due-today tasks. It uses the same Telegram credentials and remains
+off until explicitly enabled in Settings. GitHub Actions calls
+`/api/task-digest` once each morning.
 
 ## Listing Persistence
 
@@ -131,7 +136,7 @@ npm run test:sources
 3. Add all environment variables from `.env.example`.
 4. Deploy.
 5. Log in with `APP_PASSWORD`.
-6. Apply migrations `006` through `009`, configure Telegram credentials, and enable alerts in Settings.
+6. Apply migrations `006` through `010`, configure Telegram credentials, and enable alerts in Settings.
 7. Add the matching `KOBOLD_CRON_SECRET` repository secret.
 8. Run the **Job scan** workflow once to establish the silent baseline.
 9. Run a Board refresh and confirm live listings and source coverage render.

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Board from './pages/Board.vue';
 import FreelanceContacts from './pages/FreelanceContacts.vue';
+import FreelanceContactDetail from './pages/FreelanceContactDetail.vue';
 import FreelanceOpportunityDetail from './pages/FreelanceOpportunityDetail.vue';
 import FreelanceOrganizationDetail from './pages/FreelanceOrganizationDetail.vue';
 import FreelanceOrganizations from './pages/FreelanceOrganizations.vue';
@@ -48,6 +49,12 @@ const router = createRouter({
       path: '/freelance/contacts',
       name: 'freelance-contacts',
       component: FreelanceContacts,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/freelance/contacts/:id',
+      name: 'freelance-contact-detail',
+      component: FreelanceContactDetail,
       meta: { requiresAuth: true },
     },
     {

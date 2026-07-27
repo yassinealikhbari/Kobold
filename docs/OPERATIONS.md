@@ -22,6 +22,8 @@
 6. Smoke-test Board, Profile, Settings, Tracker, one job detail, and the
    extension fixture.
 7. Run the **Job scan** GitHub workflow manually once and inspect its log.
+8. Run the **Task digest** workflow once. It must send nothing while follow-up
+   notifications are disabled.
 
 The release audit currently reports no production dependency vulnerabilities.
 Development-only advisories are inherited through `@vercel/node`; do not apply
@@ -35,6 +37,10 @@ GitHub schedules may start late during periods of high load. `vercel.json` adds
 one daily scan at 07:23 UTC as a fallback that is compatible with Vercel Hobby.
 Both schedules call the same idempotent endpoint, and the active-run lock plus
 fingerprints prevent overlapping work and duplicate Telegram notifications.
+
+`.github/workflows/task-digest.yml` calls `/api/task-digest` once each morning.
+The endpoint is disabled by default and records the Berlin calendar date after
+a successful send so retries cannot duplicate the same morning digest.
 
 Rotate the shared scheduler secret in both systems at the same time:
 
@@ -65,10 +71,12 @@ select
   ) as application_snapshot,
   to_regclass('public.organizations') is not null as organizations,
   to_regclass('public.contacts') is not null as contacts,
-  to_regclass('public.opportunities') is not null as opportunities;
+  to_regclass('public.opportunities') is not null as opportunities,
+  to_regclass('public.activities') is not null as activities,
+  to_regclass('public.tasks') is not null as tasks;
 ```
 
-All six values must be `true`.
+All eight values must be `true`.
 
 ## Recovery
 

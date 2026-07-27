@@ -21,12 +21,13 @@ environment, database, or scheduling change.
   `003_ingest_health.sql`, `004_board_explanations.sql`,
   `005_application_job_snapshots.sql`, `006_job_fingerprints.sql`, and
   `007_profile_experience.sql`, `008_crm_core.sql`, and
-  `009_opportunities.sql`. Missing `002` breaks tracker status updates;
+  `009_opportunities.sql`, and `010_activity_tasks.sql`. Missing `002` breaks tracker status updates;
   missing `005` prevents submitted applications from saving their listing
   snapshots; missing `006` disables duplicate-safe notifications; missing `007`
   prevents the experience baseline from being saved; missing `008` disables
   organization and contact management; missing `009` disables the freelance
-  opportunity pipeline.
+  opportunity pipeline; missing `010` disables activity history, follow-ups,
+  Today, and task notifications.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.
@@ -37,6 +38,8 @@ environment, database, or scheduling change.
 - [ ] The GitHub **Job scan** workflow runs `source=all` every three hours with
   `KOBOLD_CRON_SECRET` matching Vercel's `CRON_SECRET`.
 - [ ] The daily Vercel Hobby-compatible fallback cron is registered.
+- [ ] The GitHub **Task digest** workflow runs once each morning with the same
+  `KOBOLD_CRON_SECRET`.
 - [ ] The first scan establishes a silent fingerprint baseline.
 - [ ] A later scan sends one combined Telegram digest for new jobs only.
 - [ ] Settings shows a clear error for one intentionally failed source request.
@@ -49,6 +52,8 @@ environment, database, or scheduling change.
 - [ ] Cover-letter generation works when OpenAI is enabled and returns a useful
   configuration error when it is not.
 - [ ] Telegram delivery has been tested when notifications are enabled.
+- [ ] With task notifications disabled, the morning task workflow reports
+  `disabled: true` and sends nothing.
 
 ## Application Filler Extension
 

@@ -15,6 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { data: organization, error },
         { data: contacts, error: contactsError },
         { data: opportunities, error: opportunitiesError },
+        { data: activities, error: activitiesError },
+        { data: tasks, error: tasksError },
       ] =
         await Promise.all([
           db.from('organizations').select('*').eq('id', id).maybeSingle(),
@@ -31,15 +33,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .eq('organization_id', id)
             .is('archived_at', null)
             .order('stage_changed_at', { ascending: false }),
+          db
+            .from('activities')
+            .select('*')
+            .eq('subject_type', 'organization')
+            .eq('subject_id', id)
+            .order('occurred_at', { ascending: false })
+            .limit(50),
+          db
+            .from('tasks')
+            .select('*')
+            .eq('subject_type', 'organization')
+            .eq('subject_id', id)
+            .is('done_at', null)
+            .order('due_at', { ascending: true, nullsFirst: false }),
         ]);
       if (error) throw error;
       if (contactsError) throw contactsError;
       if (opportunitiesError) throw opportunitiesError;
+      if (activitiesError) throw activitiesError;
+      if (tasksError) throw tasksError;
       if (!organization) throw new HttpError(404, 'Organization not found');
       res.status(200).json({
         organization,
         contacts: contacts ?? [],
         opportunities: opportunities ?? [],
+        activities: activities ?? [],
+        tasks: tasks ?? [],
       });
       return;
     }

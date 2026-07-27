@@ -31,6 +31,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         typeof req.body?.notify_enabled === 'boolean' ? req.body.notify_enabled : undefined;
       const minScoreNotify =
         typeof req.body?.min_score_notify === 'number' ? req.body.min_score_notify : undefined;
+      const taskNotifyEnabled =
+        typeof req.body?.task_notify_enabled === 'boolean'
+          ? req.body.task_notify_enabled
+          : undefined;
 
       if (notifyEnabled && !isTelegramConfigured()) {
         throw new HttpError(400, 'Configure Telegram credentials before enabling notifications');
@@ -38,10 +42,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (notifyEnabled && (await getNotificationStatus()).migrationRequired) {
         throw new HttpError(409, 'Apply migration 006_job_fingerprints.sql before enabling notifications');
       }
+      if (taskNotifyEnabled && !isTelegramConfigured()) {
+        throw new HttpError(400, 'Configure Telegram credentials before enabling task notifications');
+      }
 
       const payload: Record<string, unknown> = { id: 1, updated_at: new Date().toISOString() };
       if (notifyEnabled !== undefined) payload.notify_enabled = notifyEnabled;
       if (minScoreNotify !== undefined) payload.min_score_notify = minScoreNotify;
+      if (taskNotifyEnabled !== undefined) payload.task_notify_enabled = taskNotifyEnabled;
 
       const { data, error } = await getSupabase()
         .from('settings')

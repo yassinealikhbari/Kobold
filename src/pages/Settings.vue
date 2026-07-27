@@ -84,6 +84,28 @@ onMounted(() => {
       >
         {{ settings.saving ? 'Saving' : 'Save alerts' }}
       </button>
+
+      <div class="settings-row">
+        <div>
+          <strong>Morning follow-ups</strong>
+          <p class="subtle">Send overdue and due-today CRM and application tasks once each Berlin morning.</p>
+        </div>
+        <label class="check-field">
+          <input
+            v-model="settings.settings.task_notify_enabled"
+            type="checkbox"
+            :disabled="!settings.telegramConfigured && !settings.settings.task_notify_enabled"
+          />
+          Enabled
+        </label>
+      </div>
+      <button
+        type="button"
+        :disabled="settings.saving || (!settings.telegramConfigured && settings.settings.task_notify_enabled)"
+        @click="settings.saveSettings"
+      >
+        {{ settings.saving ? 'Saving' : 'Save follow-ups' }}
+      </button>
     </section>
 
     <section class="panel form-section">

@@ -134,3 +134,42 @@ export type OpportunityDraft = Pick<Opportunity, 'organization_id' | 'title'> &
       | 'lost_reason'
     >
   >;
+
+export type SubjectType = 'organization' | 'contact' | 'opportunity' | 'application';
+export type ActivityKind =
+  | 'note'
+  | 'visit'
+  | 'dm'
+  | 'email'
+  | 'call'
+  | 'meeting'
+  | 'proposal'
+  | 'stage_change'
+  | 'system';
+
+export type Activity = {
+  id: string;
+  subject_type: SubjectType;
+  subject_id: string;
+  subject_label: string;
+  subject_path: string;
+  kind: ActivityKind;
+  body: string | null;
+  metadata: Record<string, unknown>;
+  occurred_at: string;
+  created_at: string;
+};
+
+export type Task = {
+  id: string;
+  subject_type: SubjectType | null;
+  subject_id: string | null;
+  subject_label: string | null;
+  subject_path: string | null;
+  mode: 'freelance' | 'jobs' | null;
+  title: string;
+  due_at: string | null;
+  done_at: string | null;
+  created_at: string;
+  updated_at: string;
+};

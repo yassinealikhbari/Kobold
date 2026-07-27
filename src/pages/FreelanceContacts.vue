@@ -106,6 +106,7 @@ onMounted(() => {
             <template v-if="contact.organization"> · {{ contact.organization.name }}</template>
           </p>
           <div class="action-row">
+            <RouterLink class="button-link" :to="`/freelance/contacts/${contact.id}`">Open</RouterLink>
             <RouterLink
               v-if="contact.organization_id"
               class="button-link"

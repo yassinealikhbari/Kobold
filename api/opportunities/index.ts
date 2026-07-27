@@ -31,7 +31,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (organizationId) query = query.eq('organization_id', organizationId);
       const { data, error } = await query;
       if (error) throw error;
-      res.status(200).json({ opportunities: data ?? [] });
+      const opportunities = data ?? [];
+      const ids = opportunities.map((item) => item.id);
+      const taskCounts = new Map<string, number>();
+      if (ids.length) {
+        const { data: tasks, error: taskError } = await db
+          .from('tasks')
+          .select('subject_id')
+          .eq('subject_type', 'opportunity')
+          .is('done_at', null)
+          .in('subject_id', ids);
+        if (taskError) throw taskError;
+        for (const task of tasks ?? []) {
+          taskCounts.set(task.subject_id, (taskCounts.get(task.subject_id) ?? 0) + 1);
+        }
+      }
+      res.status(200).json({
+        opportunities: opportunities.map((item) => ({
+          ...item,
+          open_task_count: taskCounts.get(item.id) ?? 0,
+        })),
+      });
       return;
     }
 
@@ -53,4 +73,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 function singleQuery(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
-

@@ -2,6 +2,7 @@
 import { onMounted, reactive, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 
+import ActivityTimeline from '@/components/ActivityTimeline.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EntityDetailShell from '@/components/EntityDetailShell.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -247,5 +248,10 @@ onMounted(() => {
         </section>
       </template>
     </EntityDetailShell>
+    <ActivityTimeline
+      v-if="crm.selectedOrganization"
+      subject-type="organization"
+      :subject-id="crm.selectedOrganization.id"
+    />
   </section>
 </template>

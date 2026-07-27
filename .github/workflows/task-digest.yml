@@ -1,0 +1,31 @@
+name: Task digest
+
+on:
+  schedule:
+    - cron: '13 7 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: kobold-task-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send due and overdue task digest
+        env:
+          KOBOLD_APP_URL: https://kobold-gamma.vercel.app
+          KOBOLD_CRON_SECRET: ${{ secrets.KOBOLD_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$KOBOLD_CRON_SECRET"
+          curl --fail-with-body --silent --show-error \
+            --max-time 60 \
+            --retry 2 \
+            --retry-all-errors \
+            --request POST \
+            --header "x-cron-secret: $KOBOLD_CRON_SECRET" \
+            "$KOBOLD_APP_URL/api/task-digest"
+
