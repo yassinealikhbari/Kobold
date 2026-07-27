@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
+import EmptyState from '@/components/EmptyState.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import JobCard from '@/components/JobCard.vue';
 import { relativeDate } from '@/lib/dates';
@@ -195,15 +196,17 @@ onMounted(() => {
     </div>
 
     <div v-if="jobs.loading" class="panel board-loading" aria-live="polite">Checking live sources...</div>
-    <div v-else-if="jobs.filteredJobs.length === 0" class="panel empty-state">
-      <h2>{{ emptyTitle }}</h2>
-      <p class="subtle">{{ emptyBody }}</p>
+    <EmptyState
+      v-else-if="jobs.filteredJobs.length === 0"
+      :title="emptyTitle"
+      :description="emptyBody"
+    >
       <div class="action-row">
         <button v-if="jobs.activeFilterCount" type="button" @click="jobs.clearFilters">Clear filters</button>
         <button v-else-if="jobs.view !== 'all' && jobs.jobs.length" type="button" @click="showAll">View all jobs</button>
         <button v-else type="button" @click="jobs.refreshSources()">Refresh sources</button>
       </div>
-    </div>
+    </EmptyState>
     <div v-else class="job-list" :aria-busy="jobs.refreshing">
       <div class="result-heading">
         <span class="result-count">{{ resultLabel }}</span>

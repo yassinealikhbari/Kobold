@@ -2,7 +2,13 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import PageHeader from '@/components/PageHeader.vue';
 import { ApiError } from '@/lib/api';
+import {
+  isWorkspaceMode,
+  WORKSPACE_MODE_STORAGE_KEY,
+  workspaceLandingPath,
+} from '@/lib/workspace-mode';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
@@ -11,12 +17,18 @@ const router = useRouter();
 const password = ref('');
 const errorMessage = ref('');
 
+function preferredLandingPath(): string {
+  const storedMode = window.localStorage.getItem(WORKSPACE_MODE_STORAGE_KEY);
+  return workspaceLandingPath(isWorkspaceMode(storedMode) ? storedMode : 'jobs');
+}
+
 async function submit() {
   errorMessage.value = '';
 
   try {
     await auth.login(password.value);
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/';
+    const redirect =
+      typeof route.query.redirect === 'string' ? route.query.redirect : preferredLandingPath();
     await router.replace(redirect);
   } catch (error) {
     if (error instanceof ApiError && error.status === 429) {
@@ -31,10 +43,7 @@ async function submit() {
 
 <template>
   <section class="page">
-    <header class="page-header">
-      <p class="eyebrow">Access</p>
-      <h1>Login</h1>
-    </header>
+    <PageHeader eyebrow="Access" title="Login" />
     <form class="panel" @submit.prevent="submit">
       <label for="password">Password</label>
       <input

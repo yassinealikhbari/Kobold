@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
+import PageHeader from '@/components/PageHeader.vue';
 import TagChip from '@/components/TagChip.vue';
 import { useProfileStore } from '@/stores/profile';
 
@@ -51,10 +52,7 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <header class="page-header">
-      <p class="eyebrow">Candidate</p>
-      <h1>Profile</h1>
-    </header>
+    <PageHeader eyebrow="Candidate" title="Profile" />
 
     <p v-if="profile.error" class="form-error">{{ profile.error }}</p>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 
+import PageHeader from '@/components/PageHeader.vue';
 import { absoluteDate } from '@/lib/dates';
 import {
   APPLICATION_STATUSES,
@@ -71,10 +72,7 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <header class="page-header">
-      <p class="eyebrow">Applications</p>
-      <h1>Tracker</h1>
-    </header>
+    <PageHeader eyebrow="Applications" title="Tracker" />
 
     <p v-if="applications.error" class="form-error">{{ applications.error }}</p>
 

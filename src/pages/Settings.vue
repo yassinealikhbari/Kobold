@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 
+import PageHeader from '@/components/PageHeader.vue';
 import TagChip from '@/components/TagChip.vue';
 import { absoluteDate } from '@/lib/dates';
 import { useSettingsStore } from '@/stores/settings';
@@ -14,10 +15,7 @@ onMounted(() => {
 
 <template>
   <section class="page">
-    <header class="page-header">
-      <p class="eyebrow">System</p>
-      <h1>Settings</h1>
-    </header>
+    <PageHeader eyebrow="System" title="Settings" />
 
     <p v-if="settings.error" class="form-error">{{ settings.error }}</p>
 
