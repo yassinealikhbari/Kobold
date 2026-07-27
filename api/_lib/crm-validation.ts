@@ -16,10 +16,28 @@ export const ORGANIZATION_ORIGINS = [
   'event',
   'other',
 ] as const;
+export const OPPORTUNITY_STAGES = [
+  'lead',
+  'contacted',
+  'conversation',
+  'proposal',
+  'won',
+  'lost',
+] as const;
+export const OPPORTUNITY_LOST_REASONS = [
+  'no budget',
+  'no response',
+  'timing',
+  'chose someone else',
+  'not a fit',
+  'business closed',
+] as const;
 
 export type OrganizationStatus = (typeof ORGANIZATION_STATUSES)[number];
 export type CrmLanguage = (typeof CRM_LANGUAGES)[number];
 export type OrganizationOrigin = (typeof ORGANIZATION_ORIGINS)[number];
+export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number];
+export type OpportunityLostReason = (typeof OPPORTUNITY_LOST_REASONS)[number];
 export type FieldErrors = Record<string, string>;
 
 type OrganizationInput = {
@@ -46,6 +64,17 @@ type ContactInput = {
   language: CrmLanguage | null;
   is_primary: boolean;
   notes: string | null;
+};
+
+type OpportunityInput = {
+  organization_id: string;
+  title: string;
+  stage: OpportunityStage;
+  value_cents: number | null;
+  currency: string;
+  confidence: number | null;
+  expected_close: string | null;
+  lost_reason: OpportunityLostReason | null;
 };
 
 export function organizationPayload(
@@ -125,6 +154,67 @@ export function contactPayload(value: unknown, partial = false): Partial<Contact
 
   throwIfInvalid(errors);
   return payload;
+}
+
+export function opportunityPayload(
+  value: unknown,
+  partial = false,
+): Partial<OpportunityInput> {
+  const body = asRecord(value);
+  const errors: FieldErrors = {};
+  const payload: Partial<OpportunityInput> = {};
+
+  readRequiredText(body, payload, errors, 'title', 200, partial);
+  readEnum(body, payload, errors, 'stage', OPPORTUNITY_STAGES);
+  readEnum(body, payload, errors, 'lost_reason', OPPORTUNITY_LOST_REASONS, true);
+
+  if ('organization_id' in body) {
+    const id = cleanText(body.organization_id);
+    if (!id || !isUuid(id)) errors.organization_id = 'Choose a valid organization.';
+    else payload.organization_id = id;
+  } else if (!partial) {
+    errors.organization_id = 'Choose an organization.';
+  }
+
+  readNullableInteger(body, payload, errors, 'value_cents', 0, 2_147_483_647);
+  readNullableInteger(body, payload, errors, 'confidence', 0, 100);
+
+  if ('currency' in body) {
+    const currency = cleanText(body.currency)?.toUpperCase();
+    if (!currency || !/^[A-Z]{3}$/.test(currency)) errors.currency = 'Use a three-letter currency code.';
+    else payload.currency = currency;
+  } else if (!partial) {
+    payload.currency = 'EUR';
+  }
+
+  if ('expected_close' in body) {
+    const date = cleanText(body.expected_close);
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) errors.expected_close = 'Use a valid date.';
+    else payload.expected_close = date;
+  }
+
+  if (!partial) payload.stage ??= 'lead';
+  throwIfInvalid(errors);
+  return payload;
+}
+
+export function validateOpportunityState(
+  patch: Partial<OpportunityInput>,
+  current?: Pick<OpportunityInput, 'stage' | 'lost_reason'>,
+): Partial<OpportunityInput> {
+  const nextStage = patch.stage ?? current?.stage ?? 'lead';
+  const nextReason =
+    nextStage === 'lost'
+      ? patch.lost_reason === undefined
+        ? current?.lost_reason
+        : patch.lost_reason
+      : null;
+  if (nextStage === 'lost' && !nextReason) {
+    throw new HttpError(400, 'A loss reason is required.', {
+      fields: { lost_reason: 'Choose why this opportunity was lost.' },
+    });
+  }
+  return { ...patch, lost_reason: nextReason ?? null };
 }
 
 export function queryEnum<T extends string>(
@@ -252,9 +342,29 @@ function readEnum<T extends object, V extends string>(
   }
 }
 
+function readNullableInteger<T extends object>(
+  body: Record<string, unknown>,
+  payload: Partial<T>,
+  errors: FieldErrors,
+  field: keyof T & string,
+  min: number,
+  max: number,
+) {
+  if (!(field in body)) return;
+  const raw = body[field];
+  if (raw === null || raw === '') {
+    Object.assign(payload, { [field]: null });
+    return;
+  }
+  if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < min || raw > max) {
+    errors[field] = `Use a whole number from ${min} to ${max}.`;
+  } else {
+    Object.assign(payload, { [field]: raw });
+  }
+}
+
 function throwIfInvalid(errors: FieldErrors) {
   if (Object.keys(errors).length) {
     throw new HttpError(400, 'Please correct the highlighted fields.', { fields: errors });
   }
 }
-

@@ -11,7 +11,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = getSupabase();
 
     if (req.method === 'GET') {
-      const [{ data: organization, error }, { data: contacts, error: contactsError }] =
+      const [
+        { data: organization, error },
+        { data: contacts, error: contactsError },
+        { data: opportunities, error: opportunitiesError },
+      ] =
         await Promise.all([
           db.from('organizations').select('*').eq('id', id).maybeSingle(),
           db
@@ -21,11 +25,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .is('archived_at', null)
             .order('is_primary', { ascending: false })
             .order('full_name'),
+          db
+            .from('opportunities')
+            .select('*')
+            .eq('organization_id', id)
+            .is('archived_at', null)
+            .order('stage_changed_at', { ascending: false }),
         ]);
       if (error) throw error;
       if (contactsError) throw contactsError;
+      if (opportunitiesError) throw opportunitiesError;
       if (!organization) throw new HttpError(404, 'Organization not found');
-      res.status(200).json({ organization, contacts: contacts ?? [] });
+      res.status(200).json({
+        organization,
+        contacts: contacts ?? [],
+        opportunities: opportunities ?? [],
+      });
       return;
     }
 
@@ -73,4 +88,3 @@ function readId(req: VercelRequest): string {
   if (!isUuid(id)) throw new HttpError(400, 'A valid organization id is required');
   return id;
 }
-

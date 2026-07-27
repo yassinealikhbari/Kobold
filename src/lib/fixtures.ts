@@ -1,7 +1,7 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
 import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
-import type { Contact, Organization } from '@/types/crm';
+import type { Contact, Opportunity, Organization } from '@/types/crm';
 
 type FixtureOptions = {
   method?: string;
@@ -69,6 +69,53 @@ const fixtureContacts: Contact[] = [
       name: fixtureOrganizations[0]!.name,
       archived_at: null,
     },
+  },
+];
+
+const fixtureOpportunities: Opportunity[] = [
+  {
+    id: '44444444-4444-4444-8444-444444444444',
+    organization_id: fixtureOrganizations[0]!.id,
+    title: 'Mobile-first restaurant site',
+    stage: 'contacted',
+    value_cents: 240000,
+    currency: 'EUR',
+    confidence: 45,
+    expected_close: new Date(now.getTime() + 14 * 86_400_000).toISOString().slice(0, 10),
+    lost_reason: null,
+    archived_at: null,
+    stage_changed_at: hoursAgo(96),
+    created_at: hoursAgo(144),
+    updated_at: hoursAgo(4),
+    organization: {
+      id: fixtureOrganizations[0]!.id,
+      name: fixtureOrganizations[0]!.name,
+      status: fixtureOrganizations[0]!.status,
+      archived_at: null,
+    },
+    open_task_count: 0,
+  },
+  {
+    id: '55555555-5555-4555-8555-555555555555',
+    organization_id: fixtureOrganizations[1]!.id,
+    title: 'Catering landing page',
+    stage: 'proposal',
+    value_cents: 180000,
+    currency: 'EUR',
+    confidence: 70,
+    expected_close: new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10),
+    lost_reason: null,
+    archived_at: null,
+    stage_changed_at: hoursAgo(24),
+    created_at: hoursAgo(240),
+    updated_at: hoursAgo(24),
+    organization: {
+      id: fixtureOrganizations[1]!.id,
+      name: fixtureOrganizations[1]!.name,
+      status: fixtureOrganizations[1]!.status,
+      archived_at: null,
+    },
+    open_task_count: 0,
   },
 ];
 
@@ -484,6 +531,9 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
         contacts: fixtureContacts
           .filter((item) => item.organization_id === id && !item.archived_at)
           .map((item) => ({ ...item })),
+        opportunities: fixtureOpportunities
+          .filter((item) => item.organization_id === id && !item.archived_at)
+          .map(withFixtureOpportunityOrganization),
       } as T;
     }
     if (method === 'PATCH') {
@@ -530,6 +580,45 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       contact.archived_at = new Date().toISOString();
       contact.updated_at = contact.archived_at;
       return { contact: { ...contact } } as T;
+    }
+  }
+
+  if (url.pathname === '/opportunities') {
+    if (method === 'GET') {
+      const stage = url.searchParams.get('stage');
+      const organizationId = url.searchParams.get('organization_id');
+      return {
+        opportunities: fixtureOpportunities
+          .filter((item) => !item.archived_at)
+          .filter((item) => !stage || item.stage === stage)
+          .filter((item) => !organizationId || item.organization_id === organizationId)
+          .map(withFixtureOpportunityOrganization),
+      } as T;
+    }
+    if (method === 'POST') return { opportunity: createFixtureOpportunity(body) } as T;
+  }
+
+  if (url.pathname.startsWith('/opportunities/')) {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const opportunity = fixtureOpportunities.find((item) => item.id === id);
+    if (!opportunity) throw new Error('Fixture opportunity not found');
+    if (method === 'GET') {
+      return { opportunity: withFixtureOpportunityOrganization(opportunity) } as T;
+    }
+    if (method === 'PATCH') {
+      const stageChanged = typeof body.stage === 'string' && body.stage !== opportunity.stage;
+      Object.assign(opportunity, body, {
+        lost_reason: body.stage && body.stage !== 'lost' ? null : body.lost_reason ?? opportunity.lost_reason,
+        archived_at: body.archived === false ? null : opportunity.archived_at,
+        stage_changed_at: stageChanged ? new Date().toISOString() : opportunity.stage_changed_at,
+        updated_at: new Date().toISOString(),
+      });
+      return { opportunity: withFixtureOpportunityOrganization(opportunity) } as T;
+    }
+    if (method === 'DELETE') {
+      opportunity.archived_at = new Date().toISOString();
+      opportunity.updated_at = opportunity.archived_at;
+      return { opportunity: { ...opportunity } } as T;
     }
   }
 
@@ -703,6 +792,53 @@ function withFixtureOrganization(contact: Contact): Contact {
     ...contact,
     organization: organization
       ? { id: organization.id, name: organization.name, archived_at: organization.archived_at }
+      : null,
+  };
+}
+
+function createFixtureOpportunity(body: Record<string, unknown>): Opportunity {
+  const timestamp = new Date().toISOString();
+  const opportunity: Opportunity = {
+    id: `${String(fixtureOpportunities.length + 30).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    organization_id: String(body.organization_id ?? ''),
+    title: String(body.title ?? '').trim(),
+    stage:
+      body.stage === 'contacted' || body.stage === 'conversation' || body.stage === 'proposal' ||
+      body.stage === 'won' || body.stage === 'lost'
+        ? body.stage
+        : 'lead',
+    value_cents: typeof body.value_cents === 'number' ? body.value_cents : null,
+    currency: typeof body.currency === 'string' ? body.currency : 'EUR',
+    confidence: typeof body.confidence === 'number' ? body.confidence : null,
+    expected_close: typeof body.expected_close === 'string' && body.expected_close ? body.expected_close : null,
+    lost_reason:
+      body.lost_reason === 'no budget' || body.lost_reason === 'no response' ||
+      body.lost_reason === 'timing' || body.lost_reason === 'chose someone else' ||
+      body.lost_reason === 'not a fit' || body.lost_reason === 'business closed'
+        ? body.lost_reason
+        : null,
+    archived_at: null,
+    stage_changed_at: timestamp,
+    created_at: timestamp,
+    updated_at: timestamp,
+    organization: null,
+    open_task_count: 0,
+  };
+  fixtureOpportunities.unshift(opportunity);
+  return withFixtureOpportunityOrganization(opportunity);
+}
+
+function withFixtureOpportunityOrganization(opportunity: Opportunity): Opportunity {
+  const organization = fixtureOrganizations.find((item) => item.id === opportunity.organization_id);
+  return {
+    ...opportunity,
+    organization: organization
+      ? {
+          id: organization.id,
+          name: organization.name,
+          status: organization.status,
+          archived_at: organization.archived_at,
+        }
       : null,
   };
 }

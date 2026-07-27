@@ -20,11 +20,13 @@ environment, database, or scheduling change.
   The current production API requires `002_application_status_timestamp.sql`,
   `003_ingest_health.sql`, `004_board_explanations.sql`,
   `005_application_job_snapshots.sql`, `006_job_fingerprints.sql`, and
-  `007_profile_experience.sql`, and `008_crm_core.sql`. Missing `002` breaks tracker status updates;
+  `007_profile_experience.sql`, `008_crm_core.sql`, and
+  `009_opportunities.sql`. Missing `002` breaks tracker status updates;
   missing `005` prevents submitted applications from saving their listing
   snapshots; missing `006` disables duplicate-safe notifications; missing `007`
   prevents the experience baseline from being saved; missing `008` disables
-  organization and contact management.
+  organization and contact management; missing `009` disables the freelance
+  opportunity pipeline.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.

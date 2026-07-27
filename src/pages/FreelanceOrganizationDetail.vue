@@ -225,6 +225,26 @@ onMounted(() => {
           </div>
           <p v-else class="subtle">No contacts yet.</p>
         </section>
+
+        <section class="panel form-section">
+          <h2>Opportunities</h2>
+          <div v-if="crm.organizationOpportunities.length" class="contact-list">
+            <RouterLink
+              v-for="opportunity in crm.organizationOpportunities"
+              :key="opportunity.id"
+              class="contact-row"
+              :to="`/freelance/opportunities/${opportunity.id}`"
+            >
+              <div>
+                <strong>{{ opportunity.title }}</strong>
+                <span>{{ opportunity.stage }}</span>
+              </div>
+              <span class="tag-chip">{{ opportunity.confidence ?? 0 }}%</span>
+            </RouterLink>
+          </div>
+          <p v-else class="subtle">No opportunities yet.</p>
+          <RouterLink class="button-link" to="/freelance">Open pipeline</RouterLink>
+        </section>
       </template>
     </EntityDetailShell>
   </section>

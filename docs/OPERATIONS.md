@@ -64,10 +64,11 @@ select
       and column_name = 'job_snapshot'
   ) as application_snapshot,
   to_regclass('public.organizations') is not null as organizations,
-  to_regclass('public.contacts') is not null as contacts;
+  to_regclass('public.contacts') is not null as contacts,
+  to_regclass('public.opportunities') is not null as opportunities;
 ```
 
-All five values must be `true`.
+All six values must be `true`.
 
 ## Recovery
 

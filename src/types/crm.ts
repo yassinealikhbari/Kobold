@@ -89,3 +89,48 @@ export type OrganizationFilters = {
   archived: boolean;
 };
 
+export type OpportunityStage =
+  | 'lead'
+  | 'contacted'
+  | 'conversation'
+  | 'proposal'
+  | 'won'
+  | 'lost';
+export type OpportunityLostReason =
+  | 'no budget'
+  | 'no response'
+  | 'timing'
+  | 'chose someone else'
+  | 'not a fit'
+  | 'business closed';
+
+export type Opportunity = {
+  id: string;
+  organization_id: string;
+  title: string;
+  stage: OpportunityStage;
+  value_cents: number | null;
+  currency: string;
+  confidence: number | null;
+  expected_close: string | null;
+  lost_reason: OpportunityLostReason | null;
+  archived_at: string | null;
+  stage_changed_at: string;
+  created_at: string;
+  updated_at: string;
+  organization: Pick<Organization, 'id' | 'name' | 'status' | 'archived_at'> | null;
+  open_task_count?: number;
+};
+
+export type OpportunityDraft = Pick<Opportunity, 'organization_id' | 'title'> &
+  Partial<
+    Pick<
+      Opportunity,
+      | 'stage'
+      | 'value_cents'
+      | 'currency'
+      | 'confidence'
+      | 'expected_close'
+      | 'lost_reason'
+    >
+  >;

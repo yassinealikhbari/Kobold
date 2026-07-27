@@ -1111,6 +1111,152 @@ form.panel {
   padding: 8px 12px;
 }
 
+.pipeline-page {
+  max-width: 1480px;
+}
+
+.pipeline-metrics {
+  display: grid;
+  width: min(100%, 900px);
+  border: var(--border-base) solid var(--ink);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--surface);
+}
+
+.pipeline-filter {
+  display: grid;
+  width: min(100%, 320px);
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.pipeline-metrics > div {
+  display: grid;
+  border-right: var(--border-thin) solid var(--ink);
+  padding: 12px;
+  gap: 4px;
+}
+
+.pipeline-metrics > div:last-child {
+  border-right: 0;
+}
+
+.pipeline-metrics span,
+.opportunity-evidence {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.pipeline-metrics strong {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 27px;
+  font-weight: 400;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.pipeline-create {
+  display: grid;
+  width: min(100%, 1200px);
+  max-width: none;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+  align-items: end;
+}
+
+.pipeline-create label,
+.loss-reason-panel label,
+.opportunity-card label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.loss-reason-panel {
+  display: grid;
+  max-width: 760px;
+  grid-template-columns: minmax(220px, 1fr) minmax(200px, 1fr) auto;
+  align-items: end;
+}
+
+.opportunity-board {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(6, minmax(190px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 5px 10px 0;
+}
+
+.opportunity-column {
+  display: grid;
+  min-height: 420px;
+  align-content: start;
+  border: var(--border-base) solid var(--ink);
+  padding: 10px;
+  gap: 10px;
+  background: var(--accent-subtle);
+}
+
+.opportunity-card {
+  display: grid;
+  border: var(--border-base) solid var(--ink);
+  padding: 11px;
+  gap: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.opportunity-card > a {
+  display: grid;
+  gap: 4px;
+}
+
+.opportunity-card strong {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.opportunity-card > a span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.opportunity-evidence {
+  display: grid;
+  gap: 3px;
+}
+
+.opportunity-evidence .is-stale {
+  border-left: 4px solid var(--danger);
+  padding-left: 5px;
+  color: var(--danger);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .crm-card-list,
 .contact-list,
 .contact-inline-form {
@@ -1860,8 +2006,13 @@ th {
 
   .crm-quick-add,
   .contact-quick-add,
-  .crm-filters {
+  .crm-filters,
+  .pipeline-create {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opportunity-board {
+    grid-template-columns: repeat(3, minmax(190px, 1fr));
   }
 }
 
@@ -1928,11 +2079,32 @@ th {
   .crm-quick-add,
   .contact-quick-add,
   .crm-filters,
+  .pipeline-create,
+  .loss-reason-panel,
+  .pipeline-metrics,
   .fit-evidence-grid,
   .form-grid,
   .metadata-list,
   .notification-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .pipeline-metrics > div {
+    border-right: 0;
+    border-bottom: var(--border-thin) solid var(--ink);
+  }
+
+  .pipeline-metrics > div:last-child {
+    border-bottom: 0;
+  }
+
+  .opportunity-board {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .opportunity-column {
+    min-height: 120px;
   }
 
   .crm-card-heading,

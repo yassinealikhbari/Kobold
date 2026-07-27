@@ -7,6 +7,7 @@ import type {
   Organization,
   OrganizationDraft,
   OrganizationFilters,
+  Opportunity,
 } from '@/types/crm';
 
 type FieldErrors = Record<string, string>;
@@ -26,6 +27,7 @@ export const useCrmStore = defineStore('crm', {
     contacts: [] as Contact[],
     selectedOrganization: null as Organization | null,
     organizationContacts: [] as Contact[],
+    organizationOpportunities: [] as Opportunity[],
     filters: emptyFilters(),
     loading: false,
     saving: false,
@@ -60,11 +62,16 @@ export const useCrmStore = defineStore('crm', {
       this.loading = true;
       this.error = null;
       try {
-        const response = await apiFetch<{ organization: Organization; contacts: Contact[] }>(
+        const response = await apiFetch<{
+          organization: Organization;
+          contacts: Contact[];
+          opportunities?: Opportunity[];
+        }>(
           `/organizations/${id}`,
         );
         this.selectedOrganization = response.organization;
         this.organizationContacts = response.contacts;
+        this.organizationOpportunities = response.opportunities ?? [];
       } catch (error) {
         this.captureError(error, 'Failed to load organization');
       } finally {

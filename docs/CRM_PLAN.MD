@@ -64,6 +64,9 @@ Opportunity stages are fixed and ordered: `lead` → `contacted` → `conversati
 → `proposal` → `won` / `lost`. `lost` requires a reason from a fixed list
 (`no budget`, `no response`, `timing`, `chose someone else`, `not a fit`,
 `business closed`). Reasons are reportable; free text alone is not.
+Lost opportunities may be reopened. Reopening records a new stage transition
+and clears the mutable `lost_reason` field while preserving the historical loss
+event.
 
 ## Information Architecture
 
@@ -145,7 +148,7 @@ create table contacts (
 
 create table opportunities (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references organizations(id) on delete cascade,
+  organization_id uuid not null references organizations(id),
   title text not null,                    -- 'One-page site for catering pivot'
   stage text not null default 'lead'
     check (stage in ('lead','contacted','conversation','proposal','won','lost')),

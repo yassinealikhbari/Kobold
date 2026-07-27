@@ -5,8 +5,10 @@ import {
   contactPayload,
   escapeLike,
   organizationPayload,
+  opportunityPayload,
   queryBoolean,
   queryEnum,
+  validateOpportunityState,
 } from './crm-validation';
 
 describe('CRM validation', () => {
@@ -66,6 +68,37 @@ describe('CRM validation', () => {
   it('escapes SQL LIKE wildcards', () => {
     expect(escapeLike('100%_match\\')).toBe('100\\%\\_match\\\\');
   });
+
+  it('normalizes opportunity money and confidence', () => {
+    expect(opportunityPayload({
+      organization_id: '11111111-1111-4111-8111-111111111111',
+      title: 'Landing page',
+      value_cents: 250000,
+      confidence: 60,
+    })).toMatchObject({
+      title: 'Landing page',
+      value_cents: 250000,
+      confidence: 60,
+      stage: 'lead',
+      currency: 'EUR',
+    });
+  });
+
+  it('requires a reason when entering lost', () => {
+    expectFieldError(
+      () => validateOpportunityState(opportunityPayload({ stage: 'lost' }, true)),
+      'lost_reason',
+    );
+  });
+
+  it('clears the active loss reason when reopening', () => {
+    expect(
+      validateOpportunityState(
+        { stage: 'conversation' },
+        { stage: 'lost', lost_reason: 'timing' },
+      ),
+    ).toEqual({ stage: 'conversation', lost_reason: null });
+  });
 });
 
 function expectFieldError(action: () => unknown, field: string) {
@@ -77,4 +110,3 @@ function expectFieldError(action: () => unknown, field: string) {
     expect((error as HttpError).details?.fields).toHaveProperty(field);
   }
 }
-
