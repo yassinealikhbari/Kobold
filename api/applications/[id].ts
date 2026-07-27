@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { requireAuth, sendError } from '../_lib/auth.js';
 import { updateApplication, type ApplicationStatus } from '../_lib/applications.js';
+import { isUuid } from '../_lib/crm-validation.js';
 import { getSupabase } from '../_lib/db.js';
 
 const STATUSES = new Set(['saved', 'applied', 'interviewing', 'offer', 'rejected']);
@@ -22,11 +23,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.status(400).json({ error: 'Invalid status' });
         return;
       }
+      const organizationId = req.body?.organization_id;
+      if (
+        organizationId !== undefined &&
+        organizationId !== null &&
+        (typeof organizationId !== 'string' || !isUuid(organizationId))
+      ) {
+        res.status(400).json({ error: 'Invalid organization_id' });
+        return;
+      }
 
       const application = await updateApplication(id, {
         status: status as ApplicationStatus | undefined,
         notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
         cover_letter: typeof req.body?.cover_letter === 'string' ? req.body.cover_letter : undefined,
+        organization_id: organizationId as string | null | undefined,
       });
 
       res.status(200).json({ application });

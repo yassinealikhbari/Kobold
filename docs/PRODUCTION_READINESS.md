@@ -22,14 +22,16 @@ environment, database, or scheduling change.
   `005_application_job_snapshots.sql`, `006_job_fingerprints.sql`, and
   `007_profile_experience.sql`, `008_crm_core.sql`, and
   `009_opportunities.sql`, `010_activity_tasks.sql`, and
-  `011_site_audits.sql`, and `012_message_templates.sql`. Missing `002` breaks tracker status updates;
+  `011_site_audits.sql`, `012_message_templates.sql`, and
+  `013_application_links.sql`. Missing `002` breaks tracker status updates;
   missing `005` prevents submitted applications from saving their listing
   snapshots; missing `006` disables duplicate-safe notifications; missing `007`
   prevents the experience baseline from being saved; missing `008` disables
   organization and contact management; missing `009` disables the freelance
   opportunity pipeline; missing `010` disables activity history, follow-ups,
   Today, and task notifications; missing `011` disables prospect site audits;
-  missing `012` disables outreach templates and message composition.
+  missing `012` disables outreach templates and message composition; missing
+  `013` disables employer links, value-history metrics, and CRM CSV export.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.

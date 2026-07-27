@@ -80,6 +80,7 @@ Freelance
   /freelance/contacts         List
   /freelance/contacts/:id     Detail: activity, tasks, and contact fields
   /freelance/templates        Outreach template variants by language
+  /freelance/metrics          Event-derived pipeline metrics and CSV export
   /freelance/opportunities/:id  Detail: stage, value, activity, tasks, linked docs
 
 Job Hunt  (existing routes, unchanged)
@@ -219,6 +220,8 @@ server-side validation, no client Supabase access.
 | `/api/audit` | POST | Phase 4. `{url}` → stored site audit |
 | `/api/templates` | GET, POST | Phase 5 |
 | `/api/templates/[id]` | PATCH, DELETE | DELETE archives a template variant |
+| `/api/metrics` | GET | Event-derived freelance pipeline metrics |
+| `/api/export` | GET | CSV export selected with `?entity=` |
 
 ---
 
@@ -443,7 +446,8 @@ job-hunt path changes.**
 
 1. Migration `013_application_links.sql`: nullable `organization_id` on
    `applications`, so an employer can also be an organization without touching
-   snapshot behavior.
+   snapshot behavior. The same additive migration establishes an opportunity
+   value-history baseline and records later value changes as immutable events.
 2. Freelance metrics: new leads per week, contact-to-conversation rate,
    proposal win rate, average days per stage, pipeline value over time, loss
    reasons breakdown.

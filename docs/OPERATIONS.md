@@ -75,10 +75,15 @@ select
   to_regclass('public.activities') is not null as activities,
   to_regclass('public.tasks') is not null as tasks,
   to_regclass('public.site_audits') is not null as site_audits,
-  to_regclass('public.message_templates') is not null as message_templates;
+  to_regclass('public.message_templates') is not null as message_templates,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'applications'
+      and column_name = 'organization_id'
+  ) as application_organization_link;
 ```
 
-All ten values must be `true`.
+All eleven values must be `true`.
 
 ## Recovery
 

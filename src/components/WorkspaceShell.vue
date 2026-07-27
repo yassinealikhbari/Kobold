@@ -23,6 +23,7 @@ const freelanceNavItems = [
   { to: '/freelance/organizations', label: 'Organizations' },
   { to: '/freelance/contacts', label: 'Contacts' },
   { to: '/freelance/templates', label: 'Templates' },
+  { to: '/freelance/metrics', label: 'Metrics' },
 ];
 
 const sharedNavItems = [

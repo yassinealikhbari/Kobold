@@ -8,6 +8,7 @@ import FreelanceOrganizationDetail from './pages/FreelanceOrganizationDetail.vue
 import FreelanceOrganizations from './pages/FreelanceOrganizations.vue';
 import FreelancePipeline from './pages/FreelancePipeline.vue';
 import FreelanceTemplates from './pages/FreelanceTemplates.vue';
+import FreelanceMetrics from './pages/FreelanceMetrics.vue';
 import JobDetail from './pages/JobDetail.vue';
 import Login from './pages/Login.vue';
 import Profile from './pages/Profile.vue';
@@ -68,6 +69,12 @@ const router = createRouter({
       path: '/freelance/templates',
       name: 'freelance-templates',
       component: FreelanceTemplates,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/freelance/metrics',
+      name: 'freelance-metrics',
+      component: FreelanceMetrics,
       meta: { requiresAuth: true },
     },
     { path: '/today', name: 'today', component: Today, meta: { requiresAuth: true } },

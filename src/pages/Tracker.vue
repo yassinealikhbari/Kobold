@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import ActivityTimeline from '@/components/ActivityTimeline.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { absoluteDate } from '@/lib/dates';
+import { useCrmStore } from '@/stores/crm';
 import {
   APPLICATION_STATUSES,
   useApplicationsStore,
@@ -12,6 +13,7 @@ import {
 import type { ApplicationStatus } from '@/types/applications';
 
 const applications = useApplicationsStore();
+const crm = useCrmStore();
 const draggedId = ref('');
 let notesTimer: number | undefined;
 let letterTimer: number | undefined;
@@ -42,6 +44,10 @@ function daysInColumn(application: TrackedApplication): number {
   return Math.max(0, Math.floor((Date.now() - new Date(start).getTime()) / 86_400_000));
 }
 
+function linkOrganization(id: string, organizationId: string) {
+  void applications.updateApplication(id, { organization_id: organizationId || null });
+}
+
 watch(
   () => applications.selected?.notes,
   () => {
@@ -67,7 +73,7 @@ watch(
 );
 
 onMounted(() => {
-  void applications.fetchApplications();
+  void Promise.all([applications.fetchApplications(), crm.fetchOrganizations()]);
 });
 </script>
 
@@ -121,6 +127,18 @@ onMounted(() => {
             <dd>{{ applications.selected.applied_at ? absoluteDate(applications.selected.applied_at) : 'Not marked' }}</dd>
           </div>
         </dl>
+        <label>
+          Employer organization
+          <select
+            :value="applications.selected.organization_id ?? ''"
+            @change="linkOrganization(applications.selected!.id, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">Not linked</option>
+            <option v-for="organization in crm.organizations" :key="organization.id" :value="organization.id">
+              {{ organization.name }}
+            </option>
+          </select>
+        </label>
         <label>
           Notes
           <textarea v-model="applications.selected.notes" rows="8"></textarea>

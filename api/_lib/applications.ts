@@ -14,6 +14,7 @@ export type ApplicationRow = {
   status_changed_at: string;
   created_at: string;
   updated_at: string;
+  organization_id: string | null;
 };
 
 export async function createApplication(job: LiveJob, coverLetter?: string): Promise<ApplicationRow> {
@@ -53,6 +54,7 @@ export async function updateApplication(id: string, patch: Partial<ApplicationRo
   }
   if ('notes' in patch) payload.notes = patch.notes ?? null;
   if ('cover_letter' in patch) payload.cover_letter = patch.cover_letter ?? null;
+  if ('organization_id' in patch) payload.organization_id = patch.organization_id ?? null;
 
   const { data, error } = await getSupabase().from('applications').update(payload).eq('id', id).select('*').single();
   if (error) throw error;

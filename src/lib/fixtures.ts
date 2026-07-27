@@ -800,6 +800,29 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
     if (method === 'POST') return { template: createFixtureTemplate(body) } as T;
   }
 
+  if (url.pathname === '/metrics') {
+    return {
+      metrics: {
+        newLeadsPerWeek: [
+          { week: new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10), count: 1 },
+          { week: now.toISOString().slice(0, 10), count: 2 },
+        ],
+        contactToConversationRate: 50,
+        proposalWinRate: 33.3,
+        averageDaysPerStage: [
+          { stage: 'lead', days: 3.2 },
+          { stage: 'contacted', days: 5.5 },
+          { stage: 'proposal', days: 4 },
+        ],
+        pipelineValueOverTime: [
+          { at: hoursAgo(24), values: { EUR: 420000 } },
+        ],
+        lossReasons: [{ reason: 'timing', count: 1 }],
+        currentPipelineByCurrency: { EUR: 420000 },
+      },
+    } as T;
+  }
+
   if (url.pathname.startsWith('/templates/')) {
     const id = url.pathname.split('/').at(-1) ?? '';
     const template = fixtureTemplates.find((item) => item.id === id);
@@ -834,6 +857,9 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
       }
       if (typeof body.notes === 'string') application.notes = body.notes;
       if (typeof body.cover_letter === 'string') application.cover_letter = body.cover_letter;
+      if (typeof body.organization_id === 'string' || body.organization_id === null) {
+        application.organization_id = body.organization_id;
+      }
       application.updated_at = new Date().toISOString();
       if (previousStatus !== application.status) {
         recordFixtureStageChange('application', application.id, previousStatus, application.status);
@@ -1222,6 +1248,7 @@ function createApplication(job: Job): FixtureApplication {
     status_changed_at: timestamp,
     created_at: timestamp,
     updated_at: timestamp,
+    organization_id: null,
   };
   fixtureApplications.push(application);
   return application;
