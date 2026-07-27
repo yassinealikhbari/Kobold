@@ -14,6 +14,7 @@ export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'HttpError';
@@ -132,7 +133,7 @@ export function sendError(
   context?: { route?: string; method?: string; source?: string; entityId?: string },
 ) {
   if (error instanceof HttpError) {
-    res.status(error.status).json({ error: error.message });
+    res.status(error.status).json({ error: error.message, ...error.details });
     return;
   }
 
@@ -147,5 +148,10 @@ export function sendError(
 
 export function isSchemaMigrationError(error: unknown): boolean {
   const details = describeServerError(error);
-  return details.code === 'PGRST204' || details.code === '42703';
+  return (
+    details.code === 'PGRST204' ||
+    details.code === 'PGRST205' ||
+    details.code === '42703' ||
+    details.code === '42P01'
+  );
 }

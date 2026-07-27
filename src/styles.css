@@ -1059,6 +1059,107 @@ form.panel {
   align-items: start;
 }
 
+.crm-quick-add {
+  display: grid;
+  width: min(100%, 1100px);
+  max-width: none;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(220px, 1.2fr) auto;
+  align-items: end;
+}
+
+.contact-quick-add {
+  grid-template-columns: minmax(180px, 1fr) repeat(2, minmax(180px, 1fr)) auto;
+}
+
+.crm-quick-add > div {
+  align-self: center;
+}
+
+.crm-quick-add label,
+.crm-filters label,
+.contact-inline-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.crm-filters {
+  display: grid;
+  width: 100%;
+  border: var(--border-base) solid var(--ink);
+  padding: 12px;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(130px, 1fr)) minmax(120px, auto) auto;
+  gap: 10px;
+  align-items: end;
+  background: var(--surface);
+}
+
+.compact-control {
+  width: fit-content;
+  padding: 8px 12px;
+}
+
+.crm-card-list,
+.contact-list,
+.contact-inline-form {
+  display: grid;
+  gap: 12px;
+}
+
+.crm-card {
+  display: grid;
+  gap: 14px;
+  border: var(--border-base) solid var(--ink);
+  padding: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.crm-card-heading,
+.contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.crm-card-heading > div,
+.contact-row > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.contact-row {
+  border-top: var(--border-thin) solid var(--ink);
+  padding-top: 10px;
+}
+
+.contact-row strong {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.contact-row span:not(.tag-chip) {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .empty-action {
   width: fit-content;
   box-shadow: var(--shadow);
@@ -1756,6 +1857,12 @@ th {
   .filter-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .crm-quick-add,
+  .contact-quick-add,
+  .crm-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 680px) {
@@ -1818,11 +1925,20 @@ th {
   }
 
   .filter-bar,
+  .crm-quick-add,
+  .contact-quick-add,
+  .crm-filters,
   .fit-evidence-grid,
   .form-grid,
   .metadata-list,
   .notification-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .crm-card-heading,
+  .contact-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .filter-toggle {

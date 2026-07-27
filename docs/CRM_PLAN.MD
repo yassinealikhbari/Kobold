@@ -31,6 +31,7 @@ workflow is unaffected.
 | Job side | `applications`, discovery, extension, and Telegram scan behavior are not refactored in phases 0–3 |
 | Lead capture | Manual entry plus URL enrichment. No marketplace scraping, no bulk business scanning in v1 |
 | Money | Opportunity values are stored but no invoicing, time tracking, or accounting |
+| Deletion | CRM entities are archived by default. History is retained and open tasks are completed when their subject is archived |
 | Stack | Unchanged: Vue 3 + Vite + Pinia SPA, Vercel functions in `/api`, Supabase Postgres + Storage |
 
 ## Domain Model
@@ -123,6 +124,7 @@ create table organizations (
   status text not null default 'prospect'
     check (status in ('prospect','active','dormant','closed','disqualified')),
   notes text,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -136,6 +138,7 @@ create table contacts (
   language text check (language in ('de','it','en')),
   is_primary boolean not null default false,
   notes text,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -150,6 +153,7 @@ create table opportunities (
   confidence int check (confidence between 0 and 100),
   expected_close date,
   lost_reason text,
+  archived_at timestamptz,
   stage_changed_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -184,6 +188,11 @@ Activities are append-only: no update route, delete only within 10 minutes of
 creation. Stage changes write an activity automatically; the timeline is the
 audit trail, not the notes field.
 
+Organizations, contacts, and opportunities use archive/restore semantics in
+normal UI flows. Archiving retains activity history, hides the entity from
+default queries, and completes its open tasks. Hard deletion is not exposed by
+the application.
+
 RLS stays enabled with no policies on every new table.
 
 ## API Surface
@@ -194,11 +203,11 @@ server-side validation, no client Supabase access.
 | Route | Methods | Notes |
 |---|---|---|
 | `/api/organizations` | GET, POST | Filters: status, district, language, has_website, q |
-| `/api/organizations/[id]` | GET, PATCH, DELETE | GET returns contacts, opportunities, recent activity, open tasks |
+| `/api/organizations/[id]` | GET, PATCH, DELETE | DELETE archives; GET returns contacts, opportunities, recent activity, open tasks |
 | `/api/contacts` | GET, POST | Filter by organization |
-| `/api/contacts/[id]` | GET, PATCH, DELETE | |
+| `/api/contacts/[id]` | GET, PATCH, DELETE | DELETE archives |
 | `/api/opportunities` | GET, POST | Filter by stage, organization; sort by stage_changed_at |
-| `/api/opportunities/[id]` | GET, PATCH, DELETE | Stage change writes an activity and sets `stage_changed_at` |
+| `/api/opportunities/[id]` | GET, PATCH, DELETE | DELETE archives; stage change writes an activity and sets `stage_changed_at` |
 | `/api/activities` | GET, POST | GET requires subject_type + subject_id |
 | `/api/tasks` | GET, POST | GET supports `?scope=today\|overdue\|upcoming\|all` |
 | `/api/tasks/[id]` | PATCH, DELETE | PATCH toggles `done_at` |
@@ -266,8 +275,8 @@ job-hunt path changes.**
 ### Acceptance Criteria
 
 - An organization can be created in under fifteen seconds from the list view.
-- Deleting an organization cascades opportunities but preserves contacts as
-  unattached rather than destroying them.
+- Archiving an organization preserves its contacts and history. Archived
+  records are hidden from default queries and can be restored.
 - Invalid payloads return field-level errors the UI renders next to the input.
 
 ### Tests

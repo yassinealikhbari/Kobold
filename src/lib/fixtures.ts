@@ -1,6 +1,7 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
 import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
+import type { Contact, Organization } from '@/types/crm';
 
 type FixtureOptions = {
   method?: string;
@@ -11,6 +12,65 @@ type FixtureApplication = Application;
 
 const now = new Date();
 const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000).toISOString();
+
+const fixtureOrganizations: Organization[] = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Cavatappi',
+    website: 'https://cavatappi.example/',
+    industry: 'Hospitality',
+    district: 'Graefekiez',
+    postcode: '10967',
+    country: 'DE',
+    language: 'it',
+    origin: 'walk_by',
+    status: 'prospect',
+    notes: 'Independent restaurant with an outdated mobile site.',
+    archived_at: null,
+    created_at: hoursAgo(72),
+    updated_at: hoursAgo(4),
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'RE Cucina',
+    website: null,
+    industry: 'Catering',
+    district: 'Neukölln',
+    postcode: '12043',
+    country: 'DE',
+    language: 'de',
+    origin: 'referral',
+    status: 'active',
+    notes: null,
+    archived_at: null,
+    created_at: hoursAgo(120),
+    updated_at: hoursAgo(24),
+  },
+];
+
+const fixtureContacts: Contact[] = [
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    organization_id: fixtureOrganizations[0]!.id,
+    full_name: 'Giulia Rossi',
+    role: 'Owner',
+    email: 'giulia@example.test',
+    phone: '+49 30 555 0101',
+    instagram: null,
+    linkedin: null,
+    language: 'it',
+    is_primary: true,
+    notes: null,
+    archived_at: null,
+    created_at: hoursAgo(48),
+    updated_at: hoursAgo(3),
+    organization: {
+      id: fixtureOrganizations[0]!.id,
+      name: fixtureOrganizations[0]!.name,
+      archived_at: null,
+    },
+  },
+];
 
 const fixtureJobs: Job[] = [
   {
@@ -397,6 +457,82 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
     }
   }
 
+  if (url.pathname === '/organizations') {
+    if (method === 'GET') {
+      const organizations = filterOrganizations(url);
+      return { organizations } as T;
+    }
+    if (method === 'POST') {
+      const organization = createFixtureOrganization(body);
+      const duplicate = fixtureOrganizations.find(
+        (item) => item.id !== organization.id && item.name.toLowerCase() === organization.name.toLowerCase(),
+      );
+      return {
+        organization,
+        warnings: duplicate ? [`An organization named “${duplicate.name}” already exists.`] : [],
+      } as T;
+    }
+  }
+
+  if (url.pathname.startsWith('/organizations/')) {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const organization = fixtureOrganizations.find((item) => item.id === id);
+    if (!organization) throw new Error('Fixture organization not found');
+    if (method === 'GET') {
+      return {
+        organization: { ...organization },
+        contacts: fixtureContacts
+          .filter((item) => item.organization_id === id && !item.archived_at)
+          .map((item) => ({ ...item })),
+      } as T;
+    }
+    if (method === 'PATCH') {
+      Object.assign(organization, body, {
+        archived_at: body.archived === false ? null : organization.archived_at,
+        updated_at: new Date().toISOString(),
+      });
+      return { organization: { ...organization } } as T;
+    }
+    if (method === 'DELETE') {
+      organization.archived_at = new Date().toISOString();
+      organization.updated_at = organization.archived_at;
+      return { organization: { ...organization } } as T;
+    }
+  }
+
+  if (url.pathname === '/contacts') {
+    if (method === 'GET') {
+      const organizationId = url.searchParams.get('organization_id');
+      const archived = url.searchParams.get('archived') === 'true';
+      return {
+        contacts: fixtureContacts
+          .filter((item) => Boolean(item.archived_at) === archived)
+          .filter((item) => !organizationId || item.organization_id === organizationId)
+          .map(withFixtureOrganization),
+      } as T;
+    }
+    if (method === 'POST') return { contact: createFixtureContact(body) } as T;
+  }
+
+  if (url.pathname.startsWith('/contacts/')) {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const contact = fixtureContacts.find((item) => item.id === id);
+    if (!contact) throw new Error('Fixture contact not found');
+    if (method === 'GET') return { contact: withFixtureOrganization(contact) } as T;
+    if (method === 'PATCH') {
+      Object.assign(contact, body, {
+        archived_at: body.archived === false ? null : contact.archived_at,
+        updated_at: new Date().toISOString(),
+      });
+      return { contact: withFixtureOrganization(contact) } as T;
+    }
+    if (method === 'DELETE') {
+      contact.archived_at = new Date().toISOString();
+      contact.updated_at = contact.archived_at;
+      return { contact: { ...contact } } as T;
+    }
+  }
+
   if (url.pathname.startsWith('/applications/')) {
     const id = url.pathname.split('/').at(-1) ?? '';
     const application = fixtureApplications.find((item) => item.id === id);
@@ -485,6 +621,90 @@ function filterJobs(url: URL): Job[] {
     .filter((job) => !search || `${job.title} ${job.company} ${job.location ?? ''}`.toLowerCase().includes(search))
     .sort((left, right) => right.score - left.score)
     .map(serializeJob);
+}
+
+function filterOrganizations(url: URL): Organization[] {
+  const q = url.searchParams.get('q')?.toLowerCase() ?? '';
+  const status = url.searchParams.get('status');
+  const language = url.searchParams.get('language');
+  const district = url.searchParams.get('district')?.toLowerCase();
+  const hasWebsite = url.searchParams.get('has_website');
+  const archived = url.searchParams.get('archived') === 'true';
+  return fixtureOrganizations
+    .filter((item) => Boolean(item.archived_at) === archived)
+    .filter((item) => !q || item.name.toLowerCase().includes(q))
+    .filter((item) => !status || item.status === status)
+    .filter((item) => !language || item.language === language)
+    .filter((item) => !district || item.district?.toLowerCase() === district)
+    .filter((item) => hasWebsite === null || Boolean(item.website) === (hasWebsite === 'true'))
+    .map((item) => ({ ...item }));
+}
+
+function createFixtureOrganization(body: Record<string, unknown>): Organization {
+  const timestamp = new Date().toISOString();
+  const organization: Organization = {
+    id: `${String(fixtureOrganizations.length + 10).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    name: String(body.name ?? '').trim(),
+    website: typeof body.website === 'string' && body.website ? body.website : null,
+    industry: typeof body.industry === 'string' && body.industry ? body.industry : null,
+    district: typeof body.district === 'string' && body.district ? body.district : null,
+    postcode: typeof body.postcode === 'string' && body.postcode ? body.postcode : null,
+    country: typeof body.country === 'string' ? body.country : 'DE',
+    language: body.language === 'it' || body.language === 'en' ? body.language : 'de',
+    origin:
+      body.origin === 'walk_by' || body.origin === 'referral' || body.origin === 'inbound' ||
+      body.origin === 'event' || body.origin === 'other'
+        ? body.origin
+        : 'manual',
+    status:
+      body.status === 'active' || body.status === 'dormant' || body.status === 'closed' ||
+      body.status === 'disqualified'
+        ? body.status
+        : 'prospect',
+    notes: typeof body.notes === 'string' && body.notes ? body.notes : null,
+    archived_at: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  fixtureOrganizations.unshift(organization);
+  return { ...organization };
+}
+
+function createFixtureContact(body: Record<string, unknown>): Contact {
+  const timestamp = new Date().toISOString();
+  const contact: Contact = {
+    id: `${String(fixtureContacts.length + 20).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    organization_id: typeof body.organization_id === 'string' ? body.organization_id : null,
+    full_name: String(body.full_name ?? '').trim(),
+    role: typeof body.role === 'string' && body.role ? body.role : null,
+    email: typeof body.email === 'string' && body.email ? body.email : null,
+    phone: typeof body.phone === 'string' && body.phone ? body.phone : null,
+    instagram: typeof body.instagram === 'string' && body.instagram ? body.instagram : null,
+    linkedin: typeof body.linkedin === 'string' && body.linkedin ? body.linkedin : null,
+    language: body.language === 'de' || body.language === 'it' || body.language === 'en' ? body.language : null,
+    is_primary: body.is_primary === true,
+    notes: typeof body.notes === 'string' && body.notes ? body.notes : null,
+    archived_at: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  if (contact.is_primary && contact.organization_id) {
+    for (const item of fixtureContacts) {
+      if (item.organization_id === contact.organization_id) item.is_primary = false;
+    }
+  }
+  fixtureContacts.unshift(contact);
+  return withFixtureOrganization(contact);
+}
+
+function withFixtureOrganization(contact: Contact): Contact {
+  const organization = fixtureOrganizations.find((item) => item.id === contact.organization_id);
+  return {
+    ...contact,
+    organization: organization
+      ? { id: organization.id, name: organization.name, archived_at: organization.archived_at }
+      : null,
+  };
 }
 
 function serializeJob(job: Job): Job {

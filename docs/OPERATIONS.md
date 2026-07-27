@@ -62,10 +62,12 @@ select
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'applications'
       and column_name = 'job_snapshot'
-  ) as application_snapshot;
+  ) as application_snapshot,
+  to_regclass('public.organizations') is not null as organizations,
+  to_regclass('public.contacts') is not null as contacts;
 ```
 
-All three values must be `true`.
+All five values must be `true`.
 
 ## Recovery
 
