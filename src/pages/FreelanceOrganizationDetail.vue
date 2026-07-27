@@ -6,6 +6,7 @@ import ActivityTimeline from '@/components/ActivityTimeline.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EntityDetailShell from '@/components/EntityDetailShell.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SiteAuditPanel from '@/components/SiteAuditPanel.vue';
 import { useCrmStore } from '@/stores/crm';
 import type { ContactDraft, OrganizationDraft } from '@/types/crm';
 
@@ -252,6 +253,11 @@ onMounted(() => {
       v-if="crm.selectedOrganization"
       subject-type="organization"
       :subject-id="crm.selectedOrganization.id"
+    />
+    <SiteAuditPanel
+      v-if="crm.selectedOrganization"
+      :organization-id="crm.selectedOrganization.id"
+      :website="crm.selectedOrganization.website"
     />
   </section>
 </template>

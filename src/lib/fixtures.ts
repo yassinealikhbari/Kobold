@@ -1,7 +1,7 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
 import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
-import type { Activity, Contact, Opportunity, Organization, Task } from '@/types/crm';
+import type { Activity, Contact, Opportunity, Organization, SiteAudit, Task } from '@/types/crm';
 
 type FixtureOptions = {
   method?: string;
@@ -147,6 +147,33 @@ const fixtureTasks: Task[] = [
     done_at: null,
     created_at: hoursAgo(4),
     updated_at: hoursAgo(4),
+  },
+];
+
+const fixtureAudits: SiteAudit[] = [
+  {
+    id: '88888888-8888-4888-8888-888888888888',
+    organization_id: fixtureOrganizations[0]!.id,
+    requested_url: fixtureOrganizations[0]!.website!,
+    final_url: fixtureOrganizations[0]!.website!,
+    status: 'completed',
+    http_status: 200,
+    https: true,
+    response_ms: 430,
+    charset: 'utf-8',
+    mojibake_detected: false,
+    viewport_meta: false,
+    page_weight_bytes: 340000,
+    generator: 'WordPress 6',
+    cms: 'WordPress',
+    has_impressum: true,
+    has_datenschutz: false,
+    has_open_graph: true,
+    last_modified: null,
+    page_title: 'Cavatappi',
+    error: null,
+    audited_at: hoursAgo(2),
+    created_at: hoursAgo(2),
   },
 ];
 
@@ -714,6 +741,19 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
     }
   }
 
+  if (url.pathname === '/audit') {
+    if (method === 'GET') {
+      const organizationId = url.searchParams.get('organization_id');
+      return {
+        audits: fixtureAudits
+          .filter((item) => item.organization_id === organizationId)
+          .sort((left, right) => right.audited_at.localeCompare(left.audited_at))
+          .map((item) => ({ ...item })),
+      } as T;
+    }
+    if (method === 'POST') return { audit: createFixtureAudit(body) } as T;
+  }
+
   if (url.pathname.startsWith('/applications/')) {
     const id = url.pathname.split('/').at(-1) ?? '';
     const application = fixtureApplications.find((item) => item.id === id);
@@ -1038,6 +1078,36 @@ function recordFixtureStageChange(
     occurred_at: timestamp,
     created_at: timestamp,
   });
+}
+
+function createFixtureAudit(body: Record<string, unknown>): SiteAudit {
+  const timestamp = new Date().toISOString();
+  const audit: SiteAudit = {
+    id: `${String(fixtureAudits.length + 70).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    organization_id: typeof body.organization_id === 'string' ? body.organization_id : null,
+    requested_url: String(body.url ?? ''),
+    final_url: String(body.url ?? ''),
+    status: 'completed',
+    http_status: 200,
+    https: String(body.url ?? '').startsWith('https://'),
+    response_ms: 380,
+    charset: 'utf-8',
+    mojibake_detected: false,
+    viewport_meta: true,
+    page_weight_bytes: 210000,
+    generator: null,
+    cms: null,
+    has_impressum: false,
+    has_datenschutz: false,
+    has_open_graph: false,
+    last_modified: null,
+    page_title: new URL(String(body.url)).hostname,
+    error: null,
+    audited_at: timestamp,
+    created_at: timestamp,
+  };
+  fixtureAudits.unshift(audit);
+  return { ...audit };
 }
 
 function serializeJob(job: Job): Job {

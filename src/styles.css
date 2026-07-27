@@ -1448,6 +1448,88 @@ form.panel {
   text-transform: uppercase;
 }
 
+.url-lead-form {
+  display: grid;
+  width: min(100%, 900px);
+  max-width: none;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.3fr) auto;
+  align-items: end;
+}
+
+.url-lead-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.audit-panel {
+  display: grid;
+  width: min(100%, 1180px);
+  gap: 16px;
+}
+
+.audit-summary {
+  display: grid;
+  border: var(--border-base) solid var(--ink);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.audit-summary > div {
+  display: grid;
+  border-right: var(--border-thin) solid var(--ink);
+  padding: 10px;
+  gap: 3px;
+}
+
+.audit-summary > div:last-child {
+  border-right: 0;
+}
+
+.audit-summary span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-summary strong {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.audit-checklist {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border: var(--border-base) solid var(--ink);
+  list-style: none;
+}
+
+.audit-checklist li {
+  display: grid;
+  border-right: var(--border-thin) solid var(--ink);
+  border-bottom: var(--border-thin) solid var(--ink);
+  padding: 10px;
+  gap: 3px;
+}
+
+.audit-checklist strong {
+  color: #1f6b4f;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.audit-checklist .is-failed strong {
+  color: var(--danger);
+}
+
 .crm-card-list,
 .contact-list,
 .contact-inline-form {
@@ -2203,6 +2285,10 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .url-lead-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .opportunity-board {
     grid-template-columns: repeat(3, minmax(190px, 1fr));
   }
@@ -2274,6 +2360,9 @@ th {
   .pipeline-create,
   .loss-reason-panel,
   .pipeline-metrics,
+  .url-lead-form,
+  .audit-summary,
+  .audit-checklist,
   .fit-evidence-grid,
   .form-grid,
   .metadata-list,

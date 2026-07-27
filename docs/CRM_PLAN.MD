@@ -376,6 +376,8 @@ job-hunt path changes.**
    Impressum/Datenschutz links, Open Graph tags, and last-modified headers.
    Ten-second timeout, one retry, failures stored as a failed audit rather than
    discarded.
+   Local, link-local, and private-network targets are rejected before fetch and
+   every redirect target is validated again.
 3. Paste-a-URL lead creation: given a URL, create the organization with
    pre-filled name and website, run one audit, and open the detail view.
 4. Audit findings render as a plain checklist on the organization page — the

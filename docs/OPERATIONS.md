@@ -73,10 +73,11 @@ select
   to_regclass('public.contacts') is not null as contacts,
   to_regclass('public.opportunities') is not null as opportunities,
   to_regclass('public.activities') is not null as activities,
-  to_regclass('public.tasks') is not null as tasks;
+  to_regclass('public.tasks') is not null as tasks,
+  to_regclass('public.site_audits') is not null as site_audits;
 ```
 
-All eight values must be `true`.
+All nine values must be `true`.
 
 ## Recovery
 

@@ -173,3 +173,28 @@ export type Task = {
   created_at: string;
   updated_at: string;
 };
+
+export type SiteAudit = {
+  id: string;
+  organization_id: string | null;
+  requested_url: string;
+  final_url: string | null;
+  status: 'completed' | 'failed';
+  http_status: number | null;
+  https: boolean | null;
+  response_ms: number | null;
+  charset: string | null;
+  mojibake_detected: boolean | null;
+  viewport_meta: boolean | null;
+  page_weight_bytes: number | null;
+  generator: string | null;
+  cms: string | null;
+  has_impressum: boolean | null;
+  has_datenschutz: boolean | null;
+  has_open_graph: boolean | null;
+  last_modified: string | null;
+  page_title: string | null;
+  error: string | null;
+  audited_at: string;
+  created_at: string;
+};

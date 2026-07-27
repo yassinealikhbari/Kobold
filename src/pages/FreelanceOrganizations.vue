@@ -1,21 +1,49 @@
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue';
-import { RouterLink } from 'vue-router';
+import { onMounted, reactive, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 
 import EmptyState from '@/components/EmptyState.vue';
 import EntityListShell from '@/components/EntityListShell.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { apiFetch } from '@/lib/api';
 import { useCrmStore } from '@/stores/crm';
 import type { OrganizationDraft } from '@/types/crm';
 
 const crm = useCrmStore();
+const router = useRouter();
 const quickAdd = reactive<OrganizationDraft>({ name: '', website: '' });
+const leadUrl = ref('');
+const capturingLead = ref(false);
 
 async function createOrganization() {
   const organization = await crm.createOrganization(quickAdd);
   if (!organization) return;
   quickAdd.name = '';
   quickAdd.website = '';
+}
+
+async function captureUrlLead() {
+  capturingLead.value = true;
+  crm.clearFeedback();
+  try {
+    const url = new URL(leadUrl.value);
+    const hostname = url.hostname.replace(/^www\./i, '');
+    const name = hostname
+      .split('.')[0]!
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const organization = await crm.createOrganization({ name, website: url.toString() });
+    if (!organization) return;
+    await apiFetch('/audit', {
+      method: 'POST',
+      body: { url: organization.website, organization_id: organization.id },
+    });
+    await router.push(`/freelance/organizations/${organization.id}`);
+  } catch (cause) {
+    crm.error = cause instanceof Error ? cause.message : 'Failed to capture URL lead';
+  } finally {
+    capturingLead.value = false;
+  }
 }
 
 function applyFilters() {
@@ -60,6 +88,20 @@ onMounted(() => {
       </label>
       <button type="submit" :disabled="crm.saving">
         {{ crm.saving ? 'Saving' : 'Add organization' }}
+      </button>
+    </form>
+
+    <form class="panel url-lead-form" @submit.prevent="captureUrlLead">
+      <div>
+        <h2>Capture from URL</h2>
+        <p class="subtle">Create the prospect, store one audit, and open its detail page.</p>
+      </div>
+      <label>
+        Website URL
+        <input v-model="leadUrl" type="url" required placeholder="https://example.com" />
+      </label>
+      <button type="submit" :disabled="capturingLead">
+        {{ capturingLead ? 'Capturing' : 'Create and audit' }}
       </button>
     </form>
 
