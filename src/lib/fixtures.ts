@@ -1,7 +1,15 @@
 import type { Application, ApplicationStatus } from '@/types/applications';
 import type { CandidateProfile } from '@/types/profile';
 import type { IngestRun, Job, SourceCoverage } from '@/types/jobs';
-import type { Activity, Contact, Opportunity, Organization, SiteAudit, Task } from '@/types/crm';
+import type {
+  Activity,
+  Contact,
+  MessageTemplate,
+  Opportunity,
+  Organization,
+  SiteAudit,
+  Task,
+} from '@/types/crm';
 
 type FixtureOptions = {
   method?: string;
@@ -67,6 +75,8 @@ const fixtureContacts: Contact[] = [
     organization: {
       id: fixtureOrganizations[0]!.id,
       name: fixtureOrganizations[0]!.name,
+      district: fixtureOrganizations[0]!.district,
+      language: fixtureOrganizations[0]!.language,
       archived_at: null,
     },
   },
@@ -174,6 +184,33 @@ const fixtureAudits: SiteAudit[] = [
     error: null,
     audited_at: hoursAgo(2),
     created_at: hoursAgo(2),
+  },
+];
+
+const fixtureTemplates: MessageTemplate[] = [
+  {
+    id: '99999999-9999-4999-8999-999999999999',
+    template_key: 'site_intro',
+    title: 'Website introduction',
+    channel: 'dm',
+    language: 'de',
+    body: 'Hallo {{contact_first_name}},\n\nmir ist bei Ihrer Website aufgefallen: {{finding}}. Ich entwickle schnelle, moderne Websites für lokale Unternehmen in {{district}}.',
+    variables: ['contact_first_name', 'finding', 'district'],
+    archived_at: null,
+    created_at: hoursAgo(12),
+    updated_at: hoursAgo(12),
+  },
+  {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    template_key: 'site_intro',
+    title: 'Website introduction',
+    channel: 'dm',
+    language: 'it',
+    body: 'Ciao {{contact_first_name}},\n\nho notato questo sul sito di {{organization_name}}: {{finding}}. Sviluppo siti moderni e veloci per attività locali.',
+    variables: ['contact_first_name', 'organization_name', 'finding'],
+    archived_at: null,
+    created_at: hoursAgo(12),
+    updated_at: hoursAgo(12),
   },
 ];
 
@@ -754,6 +791,30 @@ export async function fixtureRequest<T>(path: string, options: FixtureOptions = 
     if (method === 'POST') return { audit: createFixtureAudit(body) } as T;
   }
 
+  if (url.pathname === '/templates') {
+    if (method === 'GET') {
+      return {
+        templates: fixtureTemplates.filter((item) => !item.archived_at).map((item) => ({ ...item })),
+      } as T;
+    }
+    if (method === 'POST') return { template: createFixtureTemplate(body) } as T;
+  }
+
+  if (url.pathname.startsWith('/templates/')) {
+    const id = url.pathname.split('/').at(-1) ?? '';
+    const template = fixtureTemplates.find((item) => item.id === id);
+    if (!template) throw new Error('Fixture template not found');
+    if (method === 'PATCH') {
+      Object.assign(template, body, { updated_at: new Date().toISOString() });
+      return { template: { ...template } } as T;
+    }
+    if (method === 'DELETE') {
+      template.archived_at = new Date().toISOString();
+      template.updated_at = template.archived_at;
+      return { template: { ...template } } as T;
+    }
+  }
+
   if (url.pathname.startsWith('/applications/')) {
     const id = url.pathname.split('/').at(-1) ?? '';
     const application = fixtureApplications.find((item) => item.id === id);
@@ -927,9 +988,40 @@ function withFixtureOrganization(contact: Contact): Contact {
   return {
     ...contact,
     organization: organization
-      ? { id: organization.id, name: organization.name, archived_at: organization.archived_at }
+      ? {
+          id: organization.id,
+          name: organization.name,
+          district: organization.district,
+          language: organization.language,
+          archived_at: organization.archived_at,
+        }
       : null,
   };
+}
+
+function createFixtureTemplate(body: Record<string, unknown>): MessageTemplate {
+  const timestamp = new Date().toISOString();
+  const title = String(body.title ?? '').trim();
+  const template: MessageTemplate = {
+    id: `${String(fixtureTemplates.length + 80).padStart(8, '0')}-0000-4000-8000-000000000001`,
+    template_key:
+      typeof body.template_key === 'string' && body.template_key
+        ? body.template_key
+        : title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
+    title,
+    channel:
+      body.channel === 'email' || body.channel === 'whatsapp' || body.channel === 'in_person'
+        ? body.channel
+        : 'dm',
+    language: body.language === 'it' || body.language === 'en' ? body.language : 'de',
+    body: String(body.body ?? ''),
+    variables: [...String(body.body ?? '').matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map((match) => match[1]!),
+    archived_at: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  fixtureTemplates.push(template);
+  return { ...template };
 }
 
 function createFixtureOpportunity(body: Record<string, unknown>): Opportunity {

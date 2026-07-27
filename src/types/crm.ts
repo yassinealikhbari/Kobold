@@ -45,7 +45,7 @@ export type Contact = {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
-  organization?: Pick<Organization, 'id' | 'name' | 'archived_at'> | null;
+  organization?: Pick<Organization, 'id' | 'name' | 'district' | 'language' | 'archived_at'> | null;
 };
 
 export type OrganizationDraft = Pick<Organization, 'name'> &
@@ -197,4 +197,17 @@ export type SiteAudit = {
   error: string | null;
   audited_at: string;
   created_at: string;
+};
+
+export type MessageTemplate = {
+  id: string;
+  template_key: string;
+  title: string;
+  channel: 'dm' | 'email' | 'whatsapp' | 'in_person';
+  language: CrmLanguage;
+  body: string;
+  variables: string[];
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
 };

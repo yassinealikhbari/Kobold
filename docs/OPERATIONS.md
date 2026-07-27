@@ -74,10 +74,11 @@ select
   to_regclass('public.opportunities') is not null as opportunities,
   to_regclass('public.activities') is not null as activities,
   to_regclass('public.tasks') is not null as tasks,
-  to_regclass('public.site_audits') is not null as site_audits;
+  to_regclass('public.site_audits') is not null as site_audits,
+  to_regclass('public.message_templates') is not null as message_templates;
 ```
 
-All nine values must be `true`.
+All ten values must be `true`.
 
 ## Recovery
 

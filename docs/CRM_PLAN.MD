@@ -79,6 +79,7 @@ Freelance
   /freelance/organizations/:id  Detail: contacts, opportunities, activity, tasks, audit
   /freelance/contacts         List
   /freelance/contacts/:id     Detail: activity, tasks, and contact fields
+  /freelance/templates        Outreach template variants by language
   /freelance/opportunities/:id  Detail: stage, value, activity, tasks, linked docs
 
 Job Hunt  (existing routes, unchanged)
@@ -217,6 +218,7 @@ server-side validation, no client Supabase access.
 | `/api/tasks/[id]` | PATCH, DELETE | PATCH toggles `done_at` |
 | `/api/audit` | POST | Phase 4. `{url}` → stored site audit |
 | `/api/templates` | GET, POST | Phase 5 |
+| `/api/templates/[id]` | PATCH, DELETE | DELETE archives a template variant |
 
 ---
 

@@ -22,6 +22,7 @@ const freelanceNavItems = [
   { to: '/freelance', label: 'Pipeline' },
   { to: '/freelance/organizations', label: 'Organizations' },
   { to: '/freelance/contacts', label: 'Contacts' },
+  { to: '/freelance/templates', label: 'Templates' },
 ];
 
 const sharedNavItems = [

@@ -5,6 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ActivityTimeline from '@/components/ActivityTimeline.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import OutreachComposer from '@/components/OutreachComposer.vue';
 import { apiFetch } from '@/lib/api';
 import { useCrmStore } from '@/stores/crm';
 import type { Contact, ContactDraft } from '@/types/crm';
@@ -108,8 +109,8 @@ onMounted(() => {
           <button type="button" class="text-button" @click="archive">Archive</button>
         </div>
       </form>
+      <OutreachComposer :contact="contact" />
       <ActivityTimeline subject-type="contact" :subject-id="contact.id" />
     </template>
   </section>
 </template>
-

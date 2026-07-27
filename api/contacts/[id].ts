@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const { data, error } = await db
         .from('contacts')
-        .select('*, organization:organizations(id,name,archived_at)')
+        .select('*, organization:organizations(id,name,district,language,archived_at)')
         .eq('id', id)
         .maybeSingle();
       if (error) throw error;
@@ -74,4 +74,3 @@ function readId(req: VercelRequest): string {
   if (!isUuid(id)) throw new HttpError(400, 'A valid contact id is required');
   return id;
 }
-

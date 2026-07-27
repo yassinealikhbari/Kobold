@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let query = db
         .from('contacts')
-        .select('*, organization:organizations(id,name,archived_at)')
+        .select('*, organization:organizations(id,name,district,language,archived_at)')
         .order('updated_at', { ascending: false });
       query = archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
       if (organizationId) query = query.eq('organization_id', organizationId);
@@ -63,4 +63,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 function singleQuery(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
-
