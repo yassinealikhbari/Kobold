@@ -155,13 +155,18 @@ onMounted(() => {
               <dd>{{ pipeline.selected.confidence ?? 0 }}%</dd>
             </div>
           </dl>
-          <RouterLink
-            v-if="pipeline.selected.organization_id"
-            class="button-link"
-            :to="`/freelance/organizations/${pipeline.selected.organization_id}`"
-          >
-            Open organization
-          </RouterLink>
+          <div class="action-row">
+            <RouterLink class="button-link" :to="`/freelance/opportunities/${pipeline.selected.id}/contact`">
+              Contact
+            </RouterLink>
+            <RouterLink
+              v-if="pipeline.selected.organization_id"
+              class="text-button"
+              :to="`/freelance/organizations/${pipeline.selected.organization_id}`"
+            >
+              Open organization
+            </RouterLink>
+          </div>
         </section>
       </template>
     </EntityDetailShell>

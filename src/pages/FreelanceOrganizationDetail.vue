@@ -244,18 +244,18 @@ onMounted(() => {
         <section class="panel form-section">
           <h2>Opportunities</h2>
           <div v-if="crm.organizationOpportunities.length" class="contact-list">
-            <RouterLink
-              v-for="opportunity in crm.organizationOpportunities"
-              :key="opportunity.id"
-              class="contact-row"
-              :to="`/freelance/opportunities/${opportunity.id}`"
-            >
-              <div>
-                <strong>{{ opportunity.title }}</strong>
-                <span>{{ opportunity.stage }}</span>
-              </div>
+            <article v-for="opportunity in crm.organizationOpportunities" :key="opportunity.id" class="contact-row">
+              <RouterLink :to="`/freelance/opportunities/${opportunity.id}`">
+                <div>
+                  <strong>{{ opportunity.title }}</strong>
+                  <span>{{ opportunity.stage }}</span>
+                </div>
+              </RouterLink>
               <span class="tag-chip">{{ opportunity.confidence ?? 0 }}%</span>
-            </RouterLink>
+              <RouterLink class="text-button" :to="`/freelance/opportunities/${opportunity.id}/contact`">
+                Contact
+              </RouterLink>
+            </article>
           </div>
           <p v-else class="subtle">No opportunities yet.</p>
           <RouterLink class="button-link" to="/freelance">Open pipeline</RouterLink>
