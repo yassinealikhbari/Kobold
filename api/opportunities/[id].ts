@@ -3,7 +3,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
 import {
   isUuid,
+  OPPORTUNITY_STAGES,
   opportunityPayload,
+  queryBoolean,
+  queryEnum,
   validateOpportunityState,
   type OpportunityLostReason,
   type OpportunityStage,
@@ -16,10 +19,66 @@ type CurrentOpportunity = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const raw = typeof req.query.id === 'string' ? req.query.id : '';
+  const isCollection = raw === '_collection';
   try {
     await requireAuth(req);
-    const id = readId(req);
     const db = getSupabase();
+
+    if (isCollection) {
+      if (req.method === 'GET') {
+        const stage = queryEnum(req.query.stage, 'stage', OPPORTUNITY_STAGES);
+        const archived = queryBoolean(req.query.archived, 'archived') ?? false;
+        const organizationId = singleQuery(req.query.organization_id);
+        if (organizationId && !isUuid(organizationId)) throw new HttpError(400, 'Invalid organization_id');
+
+        let query = db
+          .from('opportunities')
+          .select('*, organization:organizations(id,name,status,archived_at)')
+          .order('stage_changed_at', { ascending: false });
+        query = archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
+        if (stage) query = query.eq('stage', stage);
+        if (organizationId) query = query.eq('organization_id', organizationId);
+        const { data, error } = await query;
+        if (error) throw error;
+        const opportunities = data ?? [];
+        const ids = opportunities.map((item) => item.id);
+        const taskCounts = new Map<string, number>();
+        if (ids.length) {
+          const { data: tasks, error: taskError } = await db
+            .from('tasks')
+            .select('subject_id')
+            .eq('subject_type', 'opportunity')
+            .is('done_at', null)
+            .in('subject_id', ids);
+          if (taskError) throw taskError;
+          for (const task of tasks ?? []) {
+            taskCounts.set(task.subject_id, (taskCounts.get(task.subject_id) ?? 0) + 1);
+          }
+        }
+        res.status(200).json({
+          opportunities: opportunities.map((item) => ({
+            ...item,
+            open_task_count: taskCounts.get(item.id) ?? 0,
+          })),
+        });
+        return;
+      }
+
+      if (req.method === 'POST') {
+        const payload = validateOpportunityState(opportunityPayload(req.body ?? {}));
+        const { data, error } = await db.from('opportunities').insert(payload).select('*, organization:organizations(id,name,status,archived_at)').single();
+        if (error) throw error;
+        res.status(201).json({ opportunity: data });
+        return;
+      }
+
+      res.setHeader('Allow', 'GET, POST');
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const id = readId(raw);
 
     if (req.method === 'GET') {
       const { data, error } = await db
@@ -68,7 +127,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('opportunities')
         .update({ archived_at: archivedAt, updated_at: archivedAt })
         .eq('id', id)
-        .is('archived_at', null)
         .select('*')
         .single();
       if (error) throw error;
@@ -80,16 +138,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     sendError(res, error, {
-      route: '/api/opportunities/:id',
+      route: isCollection ? '/api/opportunities' : '/api/opportunities/:id',
       method: req.method,
-      entityId: typeof req.query.id === 'string' ? req.query.id : undefined,
+      entityId: isCollection ? undefined : raw,
     });
   }
 }
 
-function readId(req: VercelRequest): string {
-  const id = typeof req.query.id === 'string' ? req.query.id : '';
-  if (!isUuid(id)) throw new HttpError(400, 'A valid opportunity id is required');
-  return id;
+function readId(raw: string): string {
+  if (!isUuid(raw)) throw new HttpError(400, 'A valid opportunity id is required');
+  return raw;
 }
 
+function singleQuery(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}

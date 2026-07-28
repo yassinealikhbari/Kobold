@@ -4,11 +4,29 @@
   "framework": "vite",
   "crons": [
     {
-      "path": "/api/ingest?source=all",
+      "path": "/api/system/ingest?source=all",
       "schedule": "23 7 * * *"
     }
   ],
   "rewrites": [
+    { "source": "/api/organizations", "destination": "/api/organizations/_collection" },
+    { "source": "/api/contacts", "destination": "/api/contacts/_collection" },
+    { "source": "/api/opportunities", "destination": "/api/opportunities/_collection" },
+    { "source": "/api/activities", "destination": "/api/activities/_collection" },
+    { "source": "/api/tasks", "destination": "/api/tasks/_collection" },
+    { "source": "/api/templates", "destination": "/api/templates/_collection" },
+    { "source": "/api/applications", "destination": "/api/applications/_collection" },
+    { "source": "/api/jobs", "destination": "/api/jobs/_collection" },
+    { "source": "/api/audit", "destination": "/api/system/audit" },
+    { "source": "/api/export", "destination": "/api/system/export" },
+    { "source": "/api/metrics", "destination": "/api/system/metrics" },
+    { "source": "/api/settings", "destination": "/api/system/settings" },
+    { "source": "/api/task-digest", "destination": "/api/system/task-digest" },
+    { "source": "/api/cover-letter", "destination": "/api/system/cover-letter" },
+    { "source": "/api/health", "destination": "/api/system/health" },
+    { "source": "/api/profile", "destination": "/api/system/profile" },
+    { "source": "/api/ingest", "destination": "/api/system/ingest" },
+    { "source": "/api/leads/import", "destination": "/api/system/leads-import" },
     {
       "source": "/((?!api/.*|src/.*|@vite/.*|@id/.*|@fs/.*|node_modules/.*|assets/.*).*)",
       "destination": "/index.html"

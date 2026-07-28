@@ -1,14 +1,77 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 import { HttpError, requireAuth, sendError } from '../_lib/auth.js';
-import { isUuid, organizationPayload } from '../_lib/crm-validation.js';
+import {
+  CRM_LANGUAGES,
+  escapeLike,
+  isUuid,
+  organizationPayload,
+  ORGANIZATION_STATUSES,
+  queryBoolean,
+  queryEnum,
+} from '../_lib/crm-validation.js';
 import { getSupabase } from '../_lib/db.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const raw = typeof req.query.id === 'string' ? req.query.id : '';
+  const isCollection = raw === '_collection';
   try {
     await requireAuth(req);
-    const id = readId(req);
     const db = getSupabase();
+
+    if (isCollection) {
+      if (req.method === 'GET') {
+        const status = queryEnum(req.query.status, 'status', ORGANIZATION_STATUSES);
+        const language = queryEnum(req.query.language, 'language', CRM_LANGUAGES);
+        const hasWebsite = queryBoolean(req.query.has_website, 'has_website');
+        const archived = queryBoolean(req.query.archived, 'archived') ?? false;
+        const district = singleQuery(req.query.district)?.slice(0, 120);
+        const q = singleQuery(req.query.q)?.trim();
+
+        let query = db
+          .from('organizations')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        query = archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
+        if (status) query = query.eq('status', status);
+        if (language) query = query.eq('language', language);
+        if (district) query = query.ilike('district', escapeLike(district));
+        if (hasWebsite === true) query = query.not('website', 'is', null);
+        if (hasWebsite === false) query = query.is('website', null);
+        if (q) query = query.ilike('name', `%${escapeLike(q)}%`);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        res.status(200).json({ organizations: data ?? [] });
+        return;
+      }
+
+      if (req.method === 'POST') {
+        const payload = organizationPayload(req.body ?? {});
+        const { data: duplicate, error: duplicateError } = await db
+          .from('organizations')
+          .select('id,name')
+          .ilike('name', String(payload.name))
+          .is('archived_at', null)
+          .limit(1)
+          .maybeSingle();
+        if (duplicateError) throw duplicateError;
+
+        const { data, error } = await db.from('organizations').insert(payload).select('*').single();
+        if (error) throw error;
+        res.status(201).json({
+          organization: data,
+          warnings: duplicate ? [`An organization named "${duplicate.name}" already exists.`] : [],
+        });
+        return;
+      }
+
+      res.setHeader('Allow', 'GET, POST');
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const id = readId(raw);
 
     if (req.method === 'GET') {
       const [
@@ -96,15 +159,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     sendError(res, error, {
-      route: '/api/organizations/:id',
+      route: isCollection ? '/api/organizations' : '/api/organizations/:id',
       method: req.method,
-      entityId: typeof req.query.id === 'string' ? req.query.id : undefined,
+      entityId: isCollection ? undefined : raw,
     });
   }
 }
 
-function readId(req: VercelRequest): string {
-  const id = typeof req.query.id === 'string' ? req.query.id : '';
-  if (!isUuid(id)) throw new HttpError(400, 'A valid organization id is required');
-  return id;
+function readId(raw: string): string {
+  if (!isUuid(raw)) throw new HttpError(400, 'A valid organization id is required');
+  return raw;
+}
+
+function singleQuery(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
