@@ -109,8 +109,8 @@ export function parseLeadRow(raw: LeadRow): { row: NormalizedLeadRow } | { error
       hookVerified: nonEmpty(raw.hook_verified, 500),
       placeId: nonEmpty(raw.place_id, 120),
       notesBlock: buildNotesBlock(raw),
-      draftEmailSubject: nonEmpty(raw.email_subject, 300),
-      draftEmailBody: nonEmpty(raw.email_body, 20000),
+      draftEmailSubject: nonEmpty(raw.email_subject ?? raw.subject, 300),
+      draftEmailBody: nonEmpty(raw.email_body ?? raw.draft, 20000),
     },
   };
 }

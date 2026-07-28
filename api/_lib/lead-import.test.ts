@@ -212,6 +212,30 @@ describe('parseLeadRow', () => {
     expect(result.row.draftEmailBody).toBe('Hi there,\n\nI noticed patients cannot book online...');
   });
 
+  it('falls back to the Clay export column names subject/draft', () => {
+    const result = parseLeadRow({
+      business: 'Praxis Example',
+      subject: 'A small note on your practice website',
+      draft: 'Dear Dr Example,\n\nYour practice has a strong reputation...',
+    });
+    if ('error' in result) throw new Error('expected a normalized row');
+    expect(result.row.draftEmailSubject).toBe('A small note on your practice website');
+    expect(result.row.draftEmailBody).toBe('Dear Dr Example,\n\nYour practice has a strong reputation...');
+  });
+
+  it('prefers email_subject/email_body over subject/draft when both are present', () => {
+    const result = parseLeadRow({
+      business: 'Praxis Example',
+      email_subject: 'Preferred subject',
+      subject: 'Fallback subject',
+      email_body: 'Preferred body',
+      draft: 'Fallback body',
+    });
+    if ('error' in result) throw new Error('expected a normalized row');
+    expect(result.row.draftEmailSubject).toBe('Preferred subject');
+    expect(result.row.draftEmailBody).toBe('Preferred body');
+  });
+
   it('falls back gracefully when only phone is present', () => {
     const result = parseLeadRow({ business: 'Dr. Shalah Faraj', phone: '+49 30 2011537' });
     if ('error' in result) throw new Error('expected a normalized row');
