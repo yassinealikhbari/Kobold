@@ -18,6 +18,8 @@ export type NormalizedLeadRow = {
   hookVerified: string | null;
   placeId: string | null;
   notesBlock: string;
+  draftEmailSubject: string | null;
+  draftEmailBody: string | null;
 };
 
 export type OrganizationLite = {
@@ -54,6 +56,8 @@ export type OpportunityLite = {
   organization_id: string;
   stage: string;
   archived_at: string | null;
+  draft_email_subject: string | null;
+  draft_email_body: string | null;
 };
 
 export type DedupeIndex = {
@@ -105,6 +109,8 @@ export function parseLeadRow(raw: LeadRow): { row: NormalizedLeadRow } | { error
       hookVerified: nonEmpty(raw.hook_verified, 500),
       placeId: nonEmpty(raw.place_id, 120),
       notesBlock: buildNotesBlock(raw),
+      draftEmailSubject: nonEmpty(raw.email_subject, 300),
+      draftEmailBody: nonEmpty(raw.email_body, 20000),
     },
   };
 }
@@ -347,6 +353,7 @@ export function planContactForRow(
 
 export type OpportunityPlan =
   | { action: 'create'; payload: Record<string, unknown> }
+  | { action: 'update'; opportunityId: string; payload: Record<string, unknown> }
   | { action: 'skip' };
 
 export function planOpportunityForRow(
@@ -354,14 +361,26 @@ export function planOpportunityForRow(
   organizationId: string,
   existingOpportunities: OpportunityLite[],
 ): OpportunityPlan {
-  const hasOpen = existingOpportunities.some((item) => !item.archived_at && OPEN_STAGES.has(item.stage));
-  if (hasOpen) return { action: 'skip' };
+  const open = existingOpportunities.find((item) => !item.archived_at && OPEN_STAGES.has(item.stage));
+  if (open) {
+    const payload: Record<string, unknown> = {};
+    if (row.draftEmailSubject && row.draftEmailSubject !== open.draft_email_subject) {
+      payload.draft_email_subject = row.draftEmailSubject;
+    }
+    if (row.draftEmailBody && row.draftEmailBody !== open.draft_email_body) {
+      payload.draft_email_body = row.draftEmailBody;
+    }
+    if (Object.keys(payload).length === 0) return { action: 'skip' };
+    return { action: 'update', opportunityId: open.id, payload };
+  }
   return {
     action: 'create',
     payload: {
       organization_id: organizationId,
       title: buildOpportunityTitle(row),
       stage: 'lead',
+      draft_email_subject: row.draftEmailSubject,
+      draft_email_body: row.draftEmailBody,
     },
   };
 }

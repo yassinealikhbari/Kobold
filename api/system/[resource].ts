@@ -864,7 +864,7 @@ type RowResult = {
   organization_match: 'place_id' | 'domain' | 'phone' | 'none';
   organization_id?: string;
   contact_action: 'create' | 'update' | 'none';
-  opportunity_action: 'create' | 'skip';
+  opportunity_action: 'create' | 'update' | 'skip';
   warnings: string[];
 };
 
@@ -906,6 +906,7 @@ async function handleLeadsImport(req: VercelRequest, res: VercelResponse) {
       contacts_updated: 0,
       contacts_skipped: 0,
       opportunities_created: 0,
+      opportunities_updated: 0,
     };
 
     for (const [offset, raw] of parsedRows.entries()) {
@@ -1024,6 +1025,18 @@ async function handleLeadsImport(req: VercelRequest, res: VercelResponse) {
             opportunitiesByOrg.set(organizationId, existingOpportunities);
           }
           totals.opportunities_created += 1;
+        } else if (opportunityPlan.action === 'update') {
+          const validated = opportunityPayload(opportunityPlan.payload, true);
+          if (!dryRun) {
+            const { error } = await db
+              .from('opportunities')
+              .update({ ...validated, updated_at: new Date().toISOString() })
+              .eq('id', opportunityPlan.opportunityId);
+            if (error) throw error;
+            const target = existingOpportunities.find((item) => item.id === opportunityPlan.opportunityId);
+            if (target) Object.assign(target, validated);
+          }
+          totals.opportunities_updated += 1;
         }
 
         results.push({
@@ -1068,7 +1081,9 @@ async function fetchLeadActiveContacts(db: ReturnType<typeof getSupabase>): Prom
 }
 
 async function fetchLeadOpportunities(db: ReturnType<typeof getSupabase>): Promise<OpportunityLite[]> {
-  const { data, error } = await db.from('opportunities').select('id,organization_id,stage,archived_at');
+  const { data, error } = await db
+    .from('opportunities')
+    .select('id,organization_id,stage,archived_at,draft_email_subject,draft_email_body');
   if (error) throw error;
   return (data ?? []) as OpportunityLite[];
 }

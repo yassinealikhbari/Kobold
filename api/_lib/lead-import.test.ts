@@ -43,6 +43,18 @@ function organization(overrides: Partial<OrganizationLite> = {}): OrganizationLi
   };
 }
 
+function opportunity(overrides: Partial<OpportunityLite> = {}): OpportunityLite {
+  return {
+    id: 'op-1',
+    organization_id: 'org-1',
+    stage: 'lead',
+    archived_at: null,
+    draft_email_subject: null,
+    draft_email_body: null,
+    ...overrides,
+  };
+}
+
 function contact(overrides: Partial<ContactLite> = {}): ContactLite {
   return {
     id: 'contact-1',
@@ -185,6 +197,19 @@ describe('parseLeadRow', () => {
     expect(result.row.email).toBe('info@praxis-example.de');
     expect(result.row.score).toBe(10);
     expect(result.row.placeId).toBe('ChIJX3o-m3lRqEcR1WfL7E8fxF8');
+    expect(result.row.draftEmailSubject).toBeNull();
+    expect(result.row.draftEmailBody).toBeNull();
+  });
+
+  it('parses a drafted outreach email when present', () => {
+    const result = parseLeadRow({
+      business: 'Praxis Example',
+      email_subject: 'Quick fix for your booking page',
+      email_body: 'Hi there,\n\nI noticed patients cannot book online...',
+    });
+    if ('error' in result) throw new Error('expected a normalized row');
+    expect(result.row.draftEmailSubject).toBe('Quick fix for your booking page');
+    expect(result.row.draftEmailBody).toBe('Hi there,\n\nI noticed patients cannot book online...');
   });
 
   it('falls back gracefully when only phone is present', () => {
@@ -338,17 +363,60 @@ describe('planOpportunityForRow', () => {
     }
   });
 
-  it('skips when the organization already has an open opportunity', () => {
-    const open: OpportunityLite = { id: 'op-1', organization_id: 'org-1', stage: 'contacted', archived_at: null };
+  it('includes the drafted email on a newly created opportunity', () => {
+    const result = parseLeadRow({
+      business: 'X',
+      email_subject: 'Subject line',
+      email_body: 'Body text',
+    });
+    if ('error' in result) throw new Error('expected row');
+    const plan = planOpportunityForRow(result.row, 'org-1', []);
+    expect(plan.action).toBe('create');
+    if (plan.action === 'create') {
+      expect(plan.payload.draft_email_subject).toBe('Subject line');
+      expect(plan.payload.draft_email_body).toBe('Body text');
+    }
+  });
+
+  it('skips when the organization already has an open opportunity and no email to add', () => {
+    const open = opportunity({ id: 'op-1', stage: 'contacted' });
     const result = parseLeadRow({ business: 'X' });
+    if ('error' in result) throw new Error('expected row');
+    expect(planOpportunityForRow(result.row, 'org-1', [open])).toEqual({ action: 'skip' });
+  });
+
+  it('updates the draft email on an existing open opportunity when the CSV has new content', () => {
+    const open = opportunity({ id: 'op-1', stage: 'lead', draft_email_subject: 'Old subject' });
+    const result = parseLeadRow({
+      business: 'X',
+      email_subject: 'New subject',
+      email_body: 'New body',
+    });
+    if ('error' in result) throw new Error('expected row');
+    const plan = planOpportunityForRow(result.row, 'org-1', [open]);
+    expect(plan).toEqual({
+      action: 'update',
+      opportunityId: 'op-1',
+      payload: { draft_email_subject: 'New subject', draft_email_body: 'New body' },
+    });
+  });
+
+  it('skips the update when the drafted email is unchanged from what is already stored', () => {
+    const open = opportunity({
+      id: 'op-1',
+      stage: 'lead',
+      draft_email_subject: 'Same subject',
+      draft_email_body: 'Same body',
+    });
+    const result = parseLeadRow({ business: 'X', email_subject: 'Same subject', email_body: 'Same body' });
     if ('error' in result) throw new Error('expected row');
     expect(planOpportunityForRow(result.row, 'org-1', [open])).toEqual({ action: 'skip' });
   });
 
   it('does not count won, lost, or archived opportunities as open', () => {
     const closed: OpportunityLite[] = [
-      { id: 'op-1', organization_id: 'org-1', stage: 'won', archived_at: null },
-      { id: 'op-2', organization_id: 'org-1', stage: 'lead', archived_at: '2026-01-01T00:00:00Z' },
+      opportunity({ id: 'op-1', stage: 'won' }),
+      opportunity({ id: 'op-2', stage: 'lead', archived_at: '2026-01-01T00:00:00Z' }),
     ];
     const result = parseLeadRow({ business: 'X' });
     if ('error' in result) throw new Error('expected row');

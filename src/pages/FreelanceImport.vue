@@ -13,7 +13,7 @@ type RowResult = {
   organization_match: 'place_id' | 'domain' | 'phone' | 'none';
   organization_id?: string;
   contact_action: 'create' | 'update' | 'none';
-  opportunity_action: 'create' | 'skip';
+  opportunity_action: 'create' | 'update' | 'skip';
   warnings: string[];
 };
 
@@ -30,6 +30,7 @@ type ImportResponse = {
     contacts_updated: number;
     contacts_skipped: number;
     opportunities_created: number;
+    opportunities_updated: number;
   };
   rows: RowResult[];
   row_errors: RowError[];
@@ -107,7 +108,7 @@ async function runImport() {
       <p v-if="fileName" class="form-hint">Loaded {{ fileName }}. You can also paste or edit CSV text below.</p>
       <label>
         CSV text
-        <textarea v-model="csv" rows="8" placeholder="business,district,address,category,phone,owner_name,domain,..."></textarea>
+        <textarea v-model="csv" rows="8" placeholder="business,district,address,category,phone,owner_name,domain,email_subject,email_body,..."></textarea>
       </label>
       <button type="submit" :disabled="previewing || !csv.trim()">
         {{ previewing ? 'Previewing' : 'Preview' }}
@@ -135,8 +136,8 @@ async function runImport() {
           <strong>{{ preview.totals.contacts_created }} / {{ preview.totals.contacts_updated }} / {{ preview.totals.contacts_skipped }}</strong>
         </div>
         <div>
-          <span>Opportunities created</span>
-          <strong>{{ preview.totals.opportunities_created }}</strong>
+          <span>Opportunities created / draft email updated</span>
+          <strong>{{ preview.totals.opportunities_created }} / {{ preview.totals.opportunities_updated }}</strong>
         </div>
       </section>
 
@@ -187,7 +188,8 @@ async function runImport() {
         {{ confirmed.totals.organizations_created }} organization(s) created,
         {{ confirmed.totals.organizations_updated }} updated,
         {{ confirmed.totals.contacts_created }} contact(s) created,
-        {{ confirmed.totals.opportunities_created }} opportunit{{ confirmed.totals.opportunities_created === 1 ? 'y' : 'ies' }} created.
+        {{ confirmed.totals.opportunities_created }} opportunit{{ confirmed.totals.opportunities_created === 1 ? 'y' : 'ies' }} created,
+        {{ confirmed.totals.opportunities_updated }} draft email(s) updated.
       </p>
       <div class="action-row">
         <RouterLink to="/freelance/organizations" class="text-button">View organizations</RouterLink>
