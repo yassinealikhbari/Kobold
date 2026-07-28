@@ -91,7 +91,7 @@ async function send() {
       <RouterLink class="button-link empty-action" to="/freelance">Back to pipeline</RouterLink>
     </EmptyState>
 
-    <form v-else class="panel form-section" @submit.prevent>
+    <form v-else class="panel form-section contact-compose-form" @submit.prevent>
       <label>
         To
         <input v-model="to" type="email" placeholder="owner@example.de" required />

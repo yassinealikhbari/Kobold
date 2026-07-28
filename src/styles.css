@@ -432,6 +432,11 @@ form.panel {
   max-width: 460px;
 }
 
+form.contact-compose-form {
+  width: 100%;
+  max-width: none;
+}
+
 .profile-form {
   max-width: 1040px;
 }
@@ -1081,9 +1086,10 @@ form.panel {
 
 .crm-quick-add {
   display: grid;
-  width: min(100%, 1100px);
+  width: 100%;
   max-width: none;
   grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(220px, 1.2fr) auto;
+  gap: 12px;
   align-items: end;
 }
 
@@ -1184,9 +1190,10 @@ form.panel {
 
 .pipeline-create {
   display: grid;
-  width: min(100%, 1200px);
+  width: 100%;
   max-width: none;
   grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+  gap: 12px;
   align-items: end;
 }
 
@@ -1475,9 +1482,10 @@ form.panel {
 
 .url-lead-form {
   display: grid;
-  width: min(100%, 900px);
+  width: 100%;
   max-width: none;
   grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.3fr) auto;
+  gap: 12px;
   align-items: end;
 }
 
@@ -2302,6 +2310,22 @@ th {
 
   .tracker-panel {
     position: static;
+  }
+}
+
+@media (max-width: 1280px) {
+  .crm-quick-add,
+  .contact-quick-add,
+  .pipeline-create {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .url-lead-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .crm-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
