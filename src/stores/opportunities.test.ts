@@ -50,6 +50,8 @@ function opportunity(): Opportunity {
     confidence: 50,
     expected_close: null,
     lost_reason: null,
+    draft_email_subject: null,
+    draft_email_body: null,
     archived_at: null,
     stage_changed_at: '2026-01-01T00:00:00.000Z',
     created_at: '2026-01-01T00:00:00.000Z',

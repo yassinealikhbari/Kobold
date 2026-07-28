@@ -82,6 +82,8 @@ type OpportunityInput = {
   confidence: number | null;
   expected_close: string | null;
   lost_reason: OpportunityLostReason | null;
+  draft_email_subject: string | null;
+  draft_email_body: string | null;
 };
 
 export function organizationPayload(
@@ -192,6 +194,8 @@ export function opportunityPayload(
 
   readNullableInteger(body, payload, errors, 'value_cents', 0, 2_147_483_647);
   readNullableInteger(body, payload, errors, 'confidence', 0, 100);
+  readOptionalText(body, payload, errors, 'draft_email_subject', 300);
+  readOptionalText(body, payload, errors, 'draft_email_body', 20000);
 
   if ('currency' in body) {
     const currency = cleanText(body.currency)?.toUpperCase();

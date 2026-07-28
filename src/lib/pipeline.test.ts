@@ -38,6 +38,8 @@ function opportunity(
     confidence,
     expected_close: null,
     lost_reason: stage === 'lost' ? 'timing' : null,
+    draft_email_subject: null,
+    draft_email_body: null,
     archived_at: null,
     stage_changed_at: '2026-01-01T00:00:00.000Z',
     created_at: '2026-01-01T00:00:00.000Z',

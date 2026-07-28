@@ -107,6 +107,8 @@ const fixtureOpportunities: Opportunity[] = [
     confidence: 45,
     expected_close: new Date(now.getTime() + 14 * 86_400_000).toISOString().slice(0, 10),
     lost_reason: null,
+    draft_email_subject: 'Quick fix for your mobile site',
+    draft_email_body: 'Hi, I noticed your site is hard to use on mobile. Happy to send over a few quick fixes.',
     archived_at: null,
     stage_changed_at: hoursAgo(96),
     created_at: hoursAgo(144),
@@ -129,6 +131,8 @@ const fixtureOpportunities: Opportunity[] = [
     confidence: 70,
     expected_close: new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10),
     lost_reason: null,
+    draft_email_subject: null,
+    draft_email_body: null,
     archived_at: null,
     stage_changed_at: hoursAgo(24),
     created_at: hoursAgo(240),
@@ -1092,6 +1096,8 @@ function createFixtureOpportunity(body: Record<string, unknown>): Opportunity {
       body.lost_reason === 'not a fit' || body.lost_reason === 'business closed'
         ? body.lost_reason
         : null,
+    draft_email_subject: typeof body.draft_email_subject === 'string' ? body.draft_email_subject : null,
+    draft_email_body: typeof body.draft_email_body === 'string' ? body.draft_email_body : null,
     archived_at: null,
     stage_changed_at: timestamp,
     created_at: timestamp,

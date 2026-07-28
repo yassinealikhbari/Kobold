@@ -128,6 +128,8 @@ export type Opportunity = {
   confidence: number | null;
   expected_close: string | null;
   lost_reason: OpportunityLostReason | null;
+  draft_email_subject: string | null;
+  draft_email_body: string | null;
   archived_at: string | null;
   stage_changed_at: string;
   created_at: string;
@@ -146,6 +148,8 @@ export type OpportunityDraft = Pick<Opportunity, 'organization_id' | 'title'> &
       | 'confidence'
       | 'expected_close'
       | 'lost_reason'
+      | 'draft_email_subject'
+      | 'draft_email_body'
     >
   >;
 
