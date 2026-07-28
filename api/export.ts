@@ -7,7 +7,9 @@ import { getSupabase } from './_lib/db.js';
 const EXPORTS = {
   organizations: [
     'id', 'name', 'website', 'industry', 'district', 'postcode', 'country', 'language',
-    'origin', 'status', 'notes', 'archived_at', 'created_at', 'updated_at',
+    'origin', 'status', 'notes', 'address', 'lead_score', 'lead_score_reason',
+    'missing_function', 'staleness_evidence', 'hook_verified', 'source_place_id',
+    'archived_at', 'created_at', 'updated_at',
   ],
   contacts: [
     'id', 'organization_id', 'full_name', 'role', 'email', 'phone', 'instagram',

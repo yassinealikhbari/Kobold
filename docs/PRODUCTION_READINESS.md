@@ -23,7 +23,7 @@ environment, database, or scheduling change.
   `007_profile_experience.sql`, `008_crm_core.sql`, and
   `009_opportunities.sql`, `010_activity_tasks.sql`, and
   `011_site_audits.sql`, `012_message_templates.sql`, and
-  `013_application_links.sql`. Missing `002` breaks tracker status updates;
+  `013_application_links.sql`, and `014_lead_import.sql`. Missing `002` breaks tracker status updates;
   missing `005` prevents submitted applications from saving their listing
   snapshots; missing `006` disables duplicate-safe notifications; missing `007`
   prevents the experience baseline from being saved; missing `008` disables
@@ -31,10 +31,17 @@ environment, database, or scheduling change.
   opportunity pipeline; missing `010` disables activity history, follow-ups,
   Today, and task notifications; missing `011` disables prospect site audits;
   missing `012` disables outreach templates and message composition; missing
-  `013` disables employer links, value-history metrics, and CRM CSV export.
+  `013` disables employer links, value-history metrics, and CRM CSV export;
+  missing `014` disables lead import and hides lead-score fields on
+  organizations.
 - [ ] The `documents` bucket exists and is private.
 - [ ] Row level security is enabled on every application table.
 - [ ] A signed CV URL works only for an authenticated session.
+- [ ] Scheduled backups or point-in-time recovery cover `organizations`,
+  `contacts`, `opportunities`, `activities`, `tasks`, `site_audits`,
+  `message_templates`, and `applications`.
+- [ ] Authenticated CSV exports for every CRM entity have been downloaded and
+  opened successfully as a portability check.
 
 ## Ingest And Scheduling
 
@@ -77,6 +84,8 @@ environment, database, or scheduling change.
 
 ## Release Verification
 
+- [ ] The CRM route authorization matrix passes and every new endpoint returns
+  `401` before data access when no session or valid scheduler secret is present.
 - [ ] `npm test` passes.
 - [ ] `npm run typecheck` passes.
 - [ ] `npm run typecheck:extension` passes.

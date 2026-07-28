@@ -51,6 +51,13 @@ type OrganizationInput = {
   origin: OrganizationOrigin;
   status: OrganizationStatus;
   notes: string | null;
+  address: string | null;
+  lead_score: number | null;
+  lead_score_reason: string | null;
+  missing_function: string | null;
+  staleness_evidence: string | null;
+  hook_verified: string | null;
+  source_place_id: string | null;
 };
 
 type ContactInput = {
@@ -94,6 +101,13 @@ export function organizationPayload(
   readEnum(body, payload, errors, 'language', CRM_LANGUAGES);
   readEnum(body, payload, errors, 'origin', ORGANIZATION_ORIGINS);
   readEnum(body, payload, errors, 'status', ORGANIZATION_STATUSES);
+  readOptionalText(body, payload, errors, 'address', 500);
+  readOptionalText(body, payload, errors, 'lead_score_reason', 2000);
+  readOptionalText(body, payload, errors, 'missing_function', 500);
+  readOptionalText(body, payload, errors, 'staleness_evidence', 2000);
+  readOptionalText(body, payload, errors, 'hook_verified', 500);
+  readOptionalText(body, payload, errors, 'source_place_id', 120);
+  readOptionalNumber(body, payload, errors, 'lead_score', 0);
 
   if ('postcode' in payload && payload.postcode && !/^[0-9A-Za-z -]{3,12}$/.test(payload.postcode)) {
     errors.postcode = 'Use 3–12 letters, numbers, spaces, or hyphens.';
@@ -358,6 +372,26 @@ function readNullableInteger<T extends object>(
   }
   if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < min || raw > max) {
     errors[field] = `Use a whole number from ${min} to ${max}.`;
+  } else {
+    Object.assign(payload, { [field]: raw });
+  }
+}
+
+function readOptionalNumber<T extends object>(
+  body: Record<string, unknown>,
+  payload: Partial<T>,
+  errors: FieldErrors,
+  field: keyof T & string,
+  min: number,
+) {
+  if (!(field in body)) return;
+  const raw = body[field];
+  if (raw === null || raw === '') {
+    Object.assign(payload, { [field]: null });
+    return;
+  }
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < min) {
+    errors[field] = `Use a number no smaller than ${min}.`;
   } else {
     Object.assign(payload, { [field]: raw });
   }

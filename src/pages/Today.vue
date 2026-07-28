@@ -28,24 +28,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page" :aria-busy="taskStore.loading">
     <PageHeader
       eyebrow="Shared workspace"
       title="Today"
       description="One ordered view for overdue and upcoming work across freelance and job hunting."
     />
-    <p v-if="taskStore.error" class="form-error">{{ taskStore.error }}</p>
+    <p v-if="taskStore.error" class="form-error" role="alert">{{ taskStore.error }}</p>
     <EntityListShell>
-      <div v-if="taskStore.loading" class="panel board-loading">Loading next actions...</div>
+      <div v-if="taskStore.loading" class="panel board-loading" role="status">Loading next actions...</div>
       <EmptyState
         v-else-if="taskStore.tasks.length === 0"
         title="Nothing needs attention"
         description="No overdue or upcoming tasks are due in the next seven days."
       />
       <div v-else class="today-sections">
-        <section v-for="section in grouped" :key="section.urgency" class="today-section">
+        <section
+          v-for="section in grouped"
+          :key="section.urgency"
+          class="today-section"
+          :aria-labelledby="`today-${section.urgency}`"
+        >
           <header class="kanban-heading">
-            <h2>{{ section.label }}</h2>
+            <h2 :id="`today-${section.urgency}`">{{ section.label }}</h2>
             <span>{{ section.tasks.length }}</span>
           </header>
           <ul v-if="section.tasks.length" class="today-task-list">
@@ -69,4 +74,3 @@ onMounted(() => {
     </EntityListShell>
   </section>
 </template>
-

@@ -134,12 +134,12 @@ onMounted(load);
 </script>
 
 <template>
-  <section class="activity-workspace">
-    <p v-if="error" class="form-error">{{ error }}</p>
+  <section class="activity-workspace" :aria-busy="loading || saving">
+    <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
-    <section class="panel timeline-panel">
+    <section class="panel timeline-panel" aria-labelledby="activity-heading">
       <div class="section-heading">
-        <h2>Activity</h2>
+        <h2 id="activity-heading">Activity</h2>
         <span class="tag-chip">Append only</span>
       </div>
       <form class="activity-form" @submit.prevent="addActivity">
@@ -162,7 +162,7 @@ onMounted(load);
         <button type="submit" :disabled="saving">Log activity</button>
       </form>
 
-      <p v-if="loading" class="subtle">Loading history...</p>
+      <p v-if="loading" class="subtle" role="status">Loading history...</p>
       <ol v-else-if="activities.length" class="timeline-list">
         <li v-for="activity in activities" :key="activity.id">
           <div class="timeline-marker" aria-hidden="true"></div>
@@ -176,6 +176,7 @@ onMounted(load);
               v-if="deletableIds.has(activity.id)"
               type="button"
               class="text-button"
+              :aria-label="`Delete ${activity.kind.replace('_', ' ')} activity from ${absoluteDate(activity.occurred_at)}`"
               @click="deleteActivity(activity.id)"
             >
               Delete
@@ -186,8 +187,8 @@ onMounted(load);
       <p v-else class="subtle">No activity yet.</p>
     </section>
 
-    <section class="panel followup-panel">
-      <h2>Next actions</h2>
+    <section class="panel followup-panel" aria-labelledby="next-actions-heading">
+      <h2 id="next-actions-heading">Next actions</h2>
       <form class="task-form" @submit.prevent="addTask">
         <label>
           Task
@@ -222,4 +223,3 @@ onMounted(load);
     </section>
   </section>
 </template>
-

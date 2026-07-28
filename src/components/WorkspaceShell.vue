@@ -23,6 +23,7 @@ const freelanceNavItems = [
   { to: '/freelance/organizations', label: 'Organizations' },
   { to: '/freelance/contacts', label: 'Contacts' },
   { to: '/freelance/templates', label: 'Templates' },
+  { to: '/freelance/import', label: 'Import' },
   { to: '/freelance/metrics', label: 'Metrics' },
 ];
 
@@ -68,6 +69,7 @@ watch(
 
 <template>
   <div class="app-shell">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <aside class="sidebar">
       <RouterLink class="brand" :to="brandTarget">
         <span class="brand-kicker">KOBOLD / 2026</span>
@@ -122,7 +124,7 @@ watch(
       </div>
     </aside>
 
-    <main class="content">
+    <main id="main-content" class="content" tabindex="-1">
       <RouterView />
     </main>
   </div>

@@ -25,6 +25,13 @@ export type Organization = {
   origin: OrganizationOrigin;
   status: OrganizationStatus;
   notes: string | null;
+  address: string | null;
+  lead_score: number | null;
+  lead_score_reason: string | null;
+  missing_function: string | null;
+  staleness_evidence: string | null;
+  hook_verified: string | null;
+  source_place_id: string | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -61,6 +68,13 @@ export type OrganizationDraft = Pick<Organization, 'name'> &
       | 'origin'
       | 'status'
       | 'notes'
+      | 'address'
+      | 'lead_score'
+      | 'lead_score_reason'
+      | 'missing_function'
+      | 'staleness_evidence'
+      | 'hook_verified'
+      | 'source_place_id'
     >
   >;
 

@@ -93,14 +93,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page pipeline-page">
+  <section class="page pipeline-page" :aria-busy="pipeline.loading">
     <PageHeader
       eyebrow="Freelance"
       title="Pipeline"
       description="Move paid work from first lead to a clear outcome."
     />
 
-    <p v-if="pipeline.error" class="form-error">{{ pipeline.error }}</p>
+    <p v-if="pipeline.error" class="form-error" role="alert">{{ pipeline.error }}</p>
 
     <label class="pipeline-filter">
       Filter by organization
@@ -178,22 +178,26 @@ onMounted(() => {
       </div>
     </form>
 
-    <div v-if="pipeline.loading" class="panel board-loading">Loading pipeline...</div>
+    <div v-if="pipeline.loading" class="panel board-loading" role="status">Loading pipeline...</div>
     <EmptyState
       v-else-if="pipeline.opportunities.length === 0"
       title="No opportunities yet"
       description="Add the first lead above. It will appear in the lead column."
     />
     <section v-else class="opportunity-board" aria-label="Opportunity pipeline">
+      <p class="sr-only">
+        Opportunities can be dragged between columns. A stage selector is also available on every card for keyboard use.
+      </p>
       <section
         v-for="stage in OPPORTUNITY_STAGES"
         :key="stage"
         class="opportunity-column"
+        :aria-labelledby="`pipeline-stage-${stage}`"
         @dragover.prevent
         @drop="drop(stage)"
       >
         <header class="kanban-heading">
-          <h2>{{ stage }}</h2>
+          <h2 :id="`pipeline-stage-${stage}`">{{ stage }}</h2>
           <span>{{ totals.counts[stage] }}</span>
         </header>
         <article
@@ -201,6 +205,7 @@ onMounted(() => {
           :key="opportunity.id"
           class="opportunity-card"
           draggable="true"
+          :aria-label="`${opportunity.title}, ${opportunity.organization?.name ?? 'unknown organization'}, ${opportunity.stage} stage`"
           @dragstart="dragStart(opportunity.id)"
         >
           <RouterLink :to="`/freelance/opportunities/${opportunity.id}`">

@@ -77,6 +77,26 @@ snapshot is saved only when you confirm **I applied**, so the Tracker remains
 available even after the source listing disappears. Saved and dismissed listings
 are kept only in the current browser.
 
+## Freelance CRM
+
+Switch to **Freelance** to manage client work without changing the existing job
+hunt. Start by adding an organization, optionally run a public-site audit, add
+contacts, and create an opportunity. Move the opportunity through `lead`,
+`contacted`, `conversation`, `proposal`, and `won` or `lost`; every stage change
+is retained in its activity history.
+
+Organization, contact, opportunity, and application detail pages share an
+append-only activity timeline and follow-up tasks. **Today** combines due work
+from freelance and job hunting. Templates provide manual, language-specific
+outreach text; KOBOLD never sends outreach automatically. **Metrics** derives
+pipeline performance from recorded events and exports organizations, contacts,
+opportunities, activities, tasks, site audits, templates, or applications as
+CSV.
+
+CRM records are archived rather than hard-deleted. Archiving keeps their
+history, hides them from default lists, and completes open tasks attached to the
+archived subject.
+
 ## Application Filler Extension
 
 KOBOLD includes a fill-only Chrome extension for common Greenhouse, Lever,

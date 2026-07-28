@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, watch } from 'vue';
+import { computed, onMounted, reactive, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 import ActivityTimeline from '@/components/ActivityTimeline.vue';
@@ -68,6 +68,19 @@ async function archiveOrganization() {
 async function restoreOrganization() {
   await crm.restoreOrganization(id);
 }
+
+const hasLeadIntelligence = computed(() => {
+  const organization = crm.selectedOrganization;
+  if (!organization) return false;
+  return Boolean(
+    organization.address ||
+      organization.lead_score !== null ||
+      organization.lead_score_reason ||
+      organization.missing_function ||
+      organization.staleness_evidence ||
+      organization.hook_verified,
+  );
+});
 
 onMounted(() => {
   void crm.fetchOrganization(id);
@@ -249,6 +262,26 @@ onMounted(() => {
         </section>
       </template>
     </EntityDetailShell>
+    <section v-if="crm.selectedOrganization && hasLeadIntelligence" class="panel form-section">
+      <h2>Lead intelligence</h2>
+      <p class="subtle">Imported from the lead source. Not editable here.</p>
+      <p v-if="crm.selectedOrganization.address"><strong>Address:</strong> {{ crm.selectedOrganization.address }}</p>
+      <p v-if="crm.selectedOrganization.lead_score !== null">
+        <strong>Score:</strong> {{ crm.selectedOrganization.lead_score }}
+      </p>
+      <p v-if="crm.selectedOrganization.lead_score_reason">
+        <strong>Why:</strong> {{ crm.selectedOrganization.lead_score_reason }}
+      </p>
+      <p v-if="crm.selectedOrganization.missing_function">
+        <strong>Missing function:</strong> {{ crm.selectedOrganization.missing_function }}
+      </p>
+      <p v-if="crm.selectedOrganization.staleness_evidence">
+        <strong>Staleness evidence:</strong> {{ crm.selectedOrganization.staleness_evidence }}
+      </p>
+      <p v-if="crm.selectedOrganization.hook_verified">
+        <strong>Hook verified:</strong> {{ crm.selectedOrganization.hook_verified }}
+      </p>
+    </section>
     <ActivityTimeline
       v-if="crm.selectedOrganization"
       subject-type="organization"

@@ -85,6 +85,41 @@ select
 
 All eleven values must be `true`.
 
+## CRM Migration Order
+
+Apply the CRM migrations only in this order, before deploying the API code that
+first reads each schema change:
+
+1. `008_crm_core.sql`
+2. `009_opportunities.sql`
+3. `010_activity_tasks.sql`
+4. `011_site_audits.sql`
+5. `012_message_templates.sql`
+6. `013_application_links.sql`
+
+All migrations are additive. Do not rename or remove an existing job-hunt table,
+column, or route during a CRM release.
+
+## Backup And Export
+
+Supabase database backups are the recovery source for all server-side state.
+Before the first CRM production release and before any later schema change:
+
+1. Confirm the project's scheduled backups or point-in-time recovery are active
+   for the production database.
+2. Confirm the backup includes `organizations`, `contacts`, `opportunities`,
+   `activities`, `tasks`, `site_audits`, `message_templates`, and the updated
+   `applications` table.
+3. Download one authenticated CSV export for each CRM entity from **Metrics**
+   and open it to verify headers, UTF-8 text, and representative rows. CSV is an
+   operational portability copy, not a replacement for the database backup.
+4. Record the backup timestamp and deployed commit in the release log.
+
+For recovery, restore the database into a separate Supabase project first,
+apply only migrations newer than the restored backup, and verify the query in
+**Database Verification** before changing production environment variables.
+Never import CSV over the production database as an automated rollback.
+
 ## Recovery
 
 - **One source fails:** inspect Settings and rerun that source. Healthy sources

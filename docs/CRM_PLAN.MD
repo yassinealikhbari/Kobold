@@ -470,6 +470,10 @@ job-hunt path changes.**
 
 ## Phase 7: Hardening And Release
 
+**Implemented.** The route authorization matrix, CRM backup/export procedures,
+workflow documentation, and accessibility pass ship together in the release
+hardening commit.
+
 ### Scope
 
 1. Extend the authorization matrix test to every new route.
