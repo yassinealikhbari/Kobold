@@ -1084,7 +1084,7 @@ form.contact-compose-form {
   align-items: start;
 }
 
-.crm-quick-add {
+.panel.crm-quick-add {
   display: grid;
   width: 100%;
   max-width: none;
@@ -1188,7 +1188,7 @@ form.contact-compose-form {
   text-transform: uppercase;
 }
 
-.pipeline-create {
+.panel.pipeline-create {
   display: grid;
   width: 100%;
   max-width: none;
@@ -1480,7 +1480,7 @@ form.contact-compose-form {
   text-transform: uppercase;
 }
 
-.url-lead-form {
+.panel.url-lead-form {
   display: grid;
   width: 100%;
   max-width: none;
