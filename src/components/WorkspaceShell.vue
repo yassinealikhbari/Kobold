@@ -25,6 +25,7 @@ const freelanceNavItems = [
   { to: '/freelance/templates', label: 'Templates' },
   { to: '/freelance/import', label: 'Import' },
   { to: '/freelance/metrics', label: 'Metrics' },
+  { to: '/freelance/archive', label: 'Archive' },
 ];
 
 const sharedNavItems = [

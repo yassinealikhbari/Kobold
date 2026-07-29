@@ -13,6 +13,7 @@ type FieldErrors = Record<string, string>;
 export const useOpportunitiesStore = defineStore('opportunities', {
   state: () => ({
     opportunities: [] as Opportunity[],
+    archived: [] as Opportunity[],
     selected: null as Opportunity | null,
     loading: false,
     saving: false,
@@ -117,10 +118,40 @@ export const useOpportunitiesStore = defineStore('opportunities', {
     async archiveOpportunity(id: string) {
       this.clearFeedback();
       try {
-        await apiFetch(`/opportunities/${id}`, { method: 'DELETE' });
+        const response = await apiFetch<{ opportunity: Opportunity }>(`/opportunities/${id}`, {
+          method: 'DELETE',
+        });
         this.opportunities = this.opportunities.filter((item) => item.id !== id);
+        if (this.selected?.id === id) this.selected = response.opportunity;
       } catch (error) {
         this.captureError(error, 'Failed to archive opportunity');
+      }
+    },
+    async fetchArchivedOpportunities() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await apiFetch<{ opportunities: Opportunity[] }>('/opportunities?archived=true');
+        this.archived = response.opportunities;
+      } catch (error) {
+        this.captureError(error, 'Failed to load archived opportunities');
+      } finally {
+        this.loading = false;
+      }
+    },
+    async restoreOpportunity(id: string): Promise<Opportunity | null> {
+      this.clearFeedback();
+      try {
+        const response = await apiFetch<{ opportunity: Opportunity }>(`/opportunities/${id}`, {
+          method: 'PATCH',
+          body: { archived: false, stage: 'lead' },
+        });
+        this.archived = this.archived.filter((item) => item.id !== id);
+        if (this.selected?.id === id) this.selected = response.opportunity;
+        return response.opportunity;
+      } catch (error) {
+        this.captureError(error, 'Failed to restore opportunity');
+        return null;
       }
     },
     mergeOpportunity(opportunity: Opportunity) {

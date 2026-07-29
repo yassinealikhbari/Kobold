@@ -1661,9 +1661,17 @@ form.contact-compose-form {
 .crm-card-heading,
 .contact-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .crm-card-heading > div,

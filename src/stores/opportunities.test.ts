@@ -39,6 +39,38 @@ describe('opportunity optimistic stage movement', () => {
   });
 });
 
+describe('archive and restore', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    apiFetch.mockReset();
+  });
+
+  it('loads archived opportunities via the archived query param', async () => {
+    const store = useOpportunitiesStore();
+    apiFetch.mockResolvedValue({ opportunities: [{ ...opportunity(), archived_at: '2026-01-02T00:00:00.000Z' }] });
+
+    await store.fetchArchivedOpportunities();
+
+    expect(apiFetch).toHaveBeenCalledWith('/opportunities?archived=true');
+    expect(store.archived).toHaveLength(1);
+  });
+
+  it('restores an archived opportunity as a lead and drops it from the archived list', async () => {
+    const store = useOpportunitiesStore();
+    store.archived = [{ ...opportunity(), archived_at: '2026-01-02T00:00:00.000Z' }];
+    apiFetch.mockResolvedValue({ opportunity: { ...opportunity(), stage: 'lead', archived_at: null } });
+
+    const result = await store.restoreOpportunity('opportunity-1');
+
+    expect(apiFetch).toHaveBeenCalledWith('/opportunities/opportunity-1', {
+      method: 'PATCH',
+      body: { archived: false, stage: 'lead' },
+    });
+    expect(store.archived).toHaveLength(0);
+    expect(result?.archived_at).toBeNull();
+  });
+});
+
 function opportunity(): Opportunity {
   return {
     id: 'opportunity-1',

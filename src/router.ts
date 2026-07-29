@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import Board from './pages/Board.vue';
+import FreelanceArchive from './pages/FreelanceArchive.vue';
 import FreelanceContacts from './pages/FreelanceContacts.vue';
 import FreelanceContactDetail from './pages/FreelanceContactDetail.vue';
 import FreelanceImport from './pages/FreelanceImport.vue';
@@ -89,6 +90,12 @@ const router = createRouter({
       path: '/freelance/metrics',
       name: 'freelance-metrics',
       component: FreelanceMetrics,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/freelance/archive',
+      name: 'freelance-archive',
+      component: FreelanceArchive,
       meta: { requiresAuth: true },
     },
     { path: '/today', name: 'today', component: Today, meta: { requiresAuth: true } },

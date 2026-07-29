@@ -8,11 +8,13 @@ import EntityDetailShell from '@/components/EntityDetailShell.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SiteAuditPanel from '@/components/SiteAuditPanel.vue';
 import { useCrmStore } from '@/stores/crm';
+import { useOpportunitiesStore } from '@/stores/opportunities';
 import type { ContactDraft, OrganizationDraft } from '@/types/crm';
 
 const route = useRoute();
 const router = useRouter();
 const crm = useCrmStore();
+const pipeline = useOpportunitiesStore();
 const id = String(route.params.id);
 const draft = reactive<OrganizationDraft>({
   name: '',
@@ -67,6 +69,15 @@ async function archiveOrganization() {
 
 async function restoreOrganization() {
   await crm.restoreOrganization(id);
+}
+
+async function archiveOpportunity(opportunityId: string) {
+  await pipeline.archiveOpportunity(opportunityId);
+  if (!pipeline.error) {
+    crm.organizationOpportunities = crm.organizationOpportunities.filter(
+      (item) => item.id !== opportunityId,
+    );
+  }
 }
 
 const hasLeadIntelligence = computed(() => {
@@ -252,9 +263,14 @@ onMounted(() => {
                 </div>
               </RouterLink>
               <span class="tag-chip">{{ opportunity.confidence ?? 0 }}%</span>
-              <RouterLink class="text-button" :to="`/freelance/opportunities/${opportunity.id}/contact`">
-                Contact
-              </RouterLink>
+              <div class="row-actions">
+                <RouterLink class="text-button" :to="`/freelance/opportunities/${opportunity.id}/contact`">
+                  Contact
+                </RouterLink>
+                <button type="button" class="text-button" @click="archiveOpportunity(opportunity.id)">
+                  Archive
+                </button>
+              </div>
             </article>
           </div>
           <p v-else class="subtle">No opportunities yet.</p>

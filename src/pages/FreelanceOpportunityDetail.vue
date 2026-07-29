@@ -48,6 +48,10 @@ async function archive() {
   if (!pipeline.error) await router.push('/freelance');
 }
 
+async function restore() {
+  await pipeline.restoreOpportunity(id);
+}
+
 onMounted(() => {
   void Promise.all([pipeline.fetchOpportunity(id), crm.fetchOrganizations()]);
 });
@@ -134,7 +138,15 @@ onMounted(() => {
         </div>
         <div class="action-row">
           <button type="submit" :disabled="pipeline.saving">{{ pipeline.saving ? 'Saving' : 'Save' }}</button>
-          <button type="button" class="text-button" @click="archive">Archive</button>
+          <button
+            v-if="pipeline.selected.archived_at"
+            type="button"
+            class="text-button"
+            @click="restore"
+          >
+            Restore as lead
+          </button>
+          <button v-else type="button" class="text-button" @click="archive">Archive</button>
         </div>
       </form>
 
