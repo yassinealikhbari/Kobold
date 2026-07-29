@@ -17,12 +17,15 @@ import type {
   OpportunityDraft,
   OpportunityLostReason,
   OpportunityStage,
+  OrganizationStatus,
 } from '@/types/crm';
 
 const crm = useCrmStore();
 const pipeline = useOpportunitiesStore();
 const draggedId = ref('');
 const organizationFilter = ref('');
+const statusFilter = ref<OrganizationStatus | ''>('');
+const fixKeyword = ref('');
 const pendingLostId = ref('');
 const pendingLostReason = ref<OpportunityLostReason>('no response');
 const draft = reactive<OpportunityDraft>({
@@ -35,10 +38,23 @@ const draft = reactive<OpportunityDraft>({
 });
 
 const visibleOpportunities = computed(() =>
-  pipeline.opportunities.filter(
-    (item) => !organizationFilter.value || item.organization_id === organizationFilter.value,
-  ),
+  pipeline.opportunities.filter((item) => {
+    if (organizationFilter.value && item.organization_id !== organizationFilter.value) return false;
+    if (statusFilter.value && item.organization?.status !== statusFilter.value) return false;
+    const needle = fixKeyword.value.trim().toLowerCase();
+    if (needle && !(item.organization?.missing_function ?? '').toLowerCase().includes(needle)) return false;
+    return true;
+  }),
 );
+const hasActiveFilters = computed(
+  () => Boolean(organizationFilter.value) || Boolean(statusFilter.value) || Boolean(fixKeyword.value.trim()),
+);
+
+function clearPipelineFilters() {
+  organizationFilter.value = '';
+  statusFilter.value = '';
+  fixKeyword.value = '';
+}
 const byStage = computed(() =>
   OPPORTUNITY_STAGES.reduce(
     (groups, stage) => {
@@ -105,15 +121,38 @@ onMounted(() => {
 
     <p v-if="pipeline.error" class="form-error" role="alert">{{ pipeline.error }}</p>
 
-    <label class="pipeline-filter">
-      Filter by organization
-      <select v-model="organizationFilter">
-        <option value="">All organizations</option>
-        <option v-for="organization in crm.organizations" :key="organization.id" :value="organization.id">
-          {{ organization.name }}
-        </option>
-      </select>
-    </label>
+    <div class="pipeline-filter-row">
+      <label class="pipeline-filter">
+        Filter by organization
+        <select v-model="organizationFilter">
+          <option value="">All organizations</option>
+          <option v-for="organization in crm.organizations" :key="organization.id" :value="organization.id">
+            {{ organization.name }}
+          </option>
+        </select>
+      </label>
+      <label class="pipeline-filter">
+        Organization status
+        <select v-model="statusFilter">
+          <option value="">Any status</option>
+          <option value="prospect">New prospects</option>
+          <option value="active">Active</option>
+          <option value="dormant">Dormant</option>
+          <option value="closed">Closed</option>
+          <option value="disqualified">Disqualified</option>
+        </select>
+      </label>
+      <label class="pipeline-filter">
+        Fix contains
+        <input v-model="fixKeyword" type="search" placeholder="e.g. booking, mobile, impressum" />
+      </label>
+      <button v-if="hasActiveFilters" type="button" class="text-button" @click="clearPipelineFilters">
+        Clear filters
+      </button>
+    </div>
+    <p v-if="hasActiveFilters" class="subtle">
+      Showing {{ visibleOpportunities.length }} of {{ pipeline.opportunities.length }} opportunities.
+    </p>
 
     <section class="pipeline-metrics" aria-label="Pipeline totals">
       <div>

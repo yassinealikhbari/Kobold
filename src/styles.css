@@ -1148,9 +1148,16 @@ form.contact-compose-form {
   background: var(--surface);
 }
 
+.pipeline-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+
 .pipeline-filter {
   display: grid;
-  width: min(100%, 320px);
+  width: min(100%, 260px);
   gap: 5px;
   color: var(--muted);
   font-size: 10px;
