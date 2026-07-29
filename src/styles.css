@@ -306,7 +306,7 @@ a {
 
 .page-header {
   display: grid;
-  width: min(100%, 880px);
+  width: 100%;
   gap: 6px;
 }
 
@@ -365,7 +365,6 @@ h3 {
 }
 
 h1 {
-  max-width: 15ch;
   font-size: 64px;
 }
 
