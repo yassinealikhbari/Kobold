@@ -118,6 +118,7 @@ const fixtureOpportunities: Opportunity[] = [
       name: fixtureOrganizations[0]!.name,
       status: fixtureOrganizations[0]!.status,
       archived_at: null,
+      missing_function: fixtureOrganizations[0]!.missing_function,
     },
     open_task_count: 0,
   },
@@ -142,6 +143,7 @@ const fixtureOpportunities: Opportunity[] = [
       name: fixtureOrganizations[1]!.name,
       status: fixtureOrganizations[1]!.status,
       archived_at: null,
+      missing_function: fixtureOrganizations[1]!.missing_function,
     },
     open_task_count: 0,
   },
@@ -1119,6 +1121,7 @@ function withFixtureOpportunityOrganization(opportunity: Opportunity): Opportuni
           name: organization.name,
           status: organization.status,
           archived_at: organization.archived_at,
+          missing_function: organization.missing_function,
         }
       : null,
   };

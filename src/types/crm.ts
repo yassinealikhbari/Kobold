@@ -134,7 +134,7 @@ export type Opportunity = {
   stage_changed_at: string;
   created_at: string;
   updated_at: string;
-  organization: Pick<Organization, 'id' | 'name' | 'status' | 'archived_at'> | null;
+  organization: Pick<Organization, 'id' | 'name' | 'status' | 'archived_at' | 'missing_function'> | null;
   open_task_count?: number;
 };
 

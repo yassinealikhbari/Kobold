@@ -9,6 +9,7 @@ import {
   formatMoney,
   OPPORTUNITY_STAGES,
   pipelineTotals,
+  sortOpportunitiesByFix,
 } from '@/lib/pipeline';
 import { useCrmStore } from '@/stores/crm';
 import { useOpportunitiesStore } from '@/stores/opportunities';
@@ -41,7 +42,9 @@ const visibleOpportunities = computed(() =>
 const byStage = computed(() =>
   OPPORTUNITY_STAGES.reduce(
     (groups, stage) => {
-      groups[stage] = visibleOpportunities.value.filter((item) => item.stage === stage);
+      groups[stage] = sortOpportunitiesByFix(
+        visibleOpportunities.value.filter((item) => item.stage === stage),
+      );
       return groups;
     },
     {} as Record<OpportunityStage, typeof pipeline.opportunities>,

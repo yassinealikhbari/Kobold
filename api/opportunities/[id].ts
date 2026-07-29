@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         let query = db
           .from('opportunities')
-          .select('*, organization:organizations(id,name,status,archived_at)')
+          .select('*, organization:organizations(id,name,status,archived_at,missing_function)')
           .order('stage_changed_at', { ascending: false });
         query = archived ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
         if (stage) query = query.eq('stage', stage);
@@ -67,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (req.method === 'POST') {
         const payload = validateOpportunityState(opportunityPayload(req.body ?? {}));
-        const { data, error } = await db.from('opportunities').insert(payload).select('*, organization:organizations(id,name,status,archived_at)').single();
+        const { data, error } = await db.from('opportunities').insert(payload).select('*, organization:organizations(id,name,status,archived_at,missing_function)').single();
         if (error) throw error;
         res.status(201).json({ opportunity: data });
         return;
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const { data, error } = await db
         .from('opportunities')
-        .select('*, organization:organizations(id,name,status,archived_at)')
+        .select('*, organization:organizations(id,name,status,archived_at,missing_function)')
         .eq('id', id)
         .maybeSingle();
       if (error) throw error;
@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...(stageChanged ? { stage_changed_at: now } : {}),
         })
         .eq('id', id)
-        .select('*, organization:organizations(id,name,status,archived_at)')
+        .select('*, organization:organizations(id,name,status,archived_at,missing_function)')
         .single();
       if (error) throw error;
       res.status(200).json({ opportunity: data });

@@ -27,6 +27,20 @@ export function pipelineTotals(opportunities: Opportunity[]) {
   };
 }
 
+export function hasNoIdentifiedFix(missingFunction: string | null | undefined): boolean {
+  return /^\s*none\b/i.test(missingFunction ?? '');
+}
+
+export function sortOpportunitiesByFix(opportunities: Opportunity[]): Opportunity[] {
+  return opportunities
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(hasNoIdentifiedFix(a.organization?.missing_function)) -
+        Number(hasNoIdentifiedFix(b.organization?.missing_function)),
+    );
+}
+
 export function daysInStage(stageChangedAt: string, now = Date.now()): number {
   return Math.max(0, Math.floor((now - new Date(stageChangedAt).getTime()) / 86_400_000));
 }
